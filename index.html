@@ -98,6 +98,7 @@ footer{font-size:13px;color:var(--muted);border-top:1px solid var(--line);paddin
       <button role="tab" data-view="secA" aria-selected="false">หน้าตัด A-A</button>
       <button role="tab" data-view="secB" aria-selected="false">หน้าตัด B-B</button>
       <button role="tab" data-view="top" aria-selected="false">มองจากด้านบน</button>
+      <button role="tab" data-view="zones" aria-selected="false">โซนกระสอบ</button>
       <button role="tab" data-view="culvert" aria-selected="false">ท่อลอดและบ่อพัก</button>
       <button role="tab" data-view="bagfull" aria-selected="false">กระสอบมีปีก</button>
       <button role="tab" data-view="sackfill" aria-selected="false">กระสอบป่าน (ใส่ทราย)</button>
@@ -130,6 +131,7 @@ footer{font-size:13px;color:var(--muted);border-top:1px solid var(--line);paddin
       <label><input type="checkbox" data-grp="culvert" checked>ท่อลอด + บ่อพัก</label>
       <label><input type="checkbox" data-grp="bags" checked>กระสอบมีปีก</label>
       <label><input type="checkbox" data-grp="sacks" checked>กระสอบป่าน</label>
+      <label><input type="checkbox" data-grp="zones" checked>ป้ายโซน</label>
       <label><input type="checkbox" data-grp="plants" checked>กล้าไม้</label>
       <label><input type="checkbox" data-grp="piles" checked>เสาเข็มสกรู</label>
     </div>
@@ -1343,8 +1345,10 @@ footer{font-size:13px;color:var(--muted);border-top:1px solid var(--line);paddin
   });
   scene.add(root);
   var ALIAS = { road: ['road', 'markings'], plants: ['plants', 'stakes'] };
-  var MAINLAYERS = ['ground','road','ditch','capbeam','pins','drains','culvert','bags','sacks','plants','piles'];
+  var MAINLAYERS = ['ground','road','ditch','capbeam','pins','drains','culvert','bags','sacks','plants','piles','zones'];
+  var zonesGroup = new THREE.Group(); scene.add(zonesGroup);
   function setLayer(id, on){
+    if (id === 'zones') zonesGroup.visible = on;
     (ALIAS[id] || [id]).forEach(function(k){ if (groups[k]) groups[k].visible = on; });
     var cb = document.querySelector('#layers [data-grp="' + id + '"]'); if (cb) cb.checked = on;
   }
@@ -1411,17 +1415,17 @@ footer{font-size:13px;color:var(--muted);border-top:1px solid var(--line);paddin
       note: 'กำแพงกระสอบมีปีกอยู่ชิดแนวลาดด้านข้างถนน capbeam กับ shear pin อยู่ใต้ขอบถนน ฝั่ง back slope มีรางระบายน้ำหนึ่งราง horizontal drain และเสาเข็มสกรู 2.0 ม. ท่อลอดอยู่ที่ปลายแนว โดยมีกระสอบเรียงเป็นบล็อกรอบปากท่อ'
     },
     cut: {
-      title: 'เลื่อนตัดดูเนื้อภายใน', bounds: ALLB, labelStep: 5, dir: [0.5, 0.3, -0.8], badge: 'ลากแถบเลื่อนเพื่อตัด', slider: true, hide: [],
+      title: 'เลื่อนตัดดูเนื้อภายใน', bounds: ALLB, labelStep: 5, dir: [0.5, 0.3, -0.8], badge: 'ลากแถบเลื่อนเพื่อตัด', slider: true, hide: ['zones'],
       dl: [['วิธีดู', 'ลากแถบเลื่อนเพื่อตัดจากปลายทางเข้ามา'], ['ที่เห็นภายใน', 'shear pin ตั้งและเอียง · Screw Pile · ท่อลอด']],
       note: 'ดินเป็นเนื้อทึบ ตัดแล้วเห็นหน้าตัดด้านในของแต่ละชิ้นงาน'
     },
     secA: {
-      title: 'หน้าตัด A-A (ตัดที่ระยะ 24.9–26.0 ม. จากต้นแนว)', bounds: {min: [-3.8, 24.9, -2.6], max: [18.9, 26.0, 6.9]}, labelStep: 2, dir: [0, 0.0005, -1], fov: 22, clip: [24.9, 26.0], capKind: 'A', badge: 'หน้าตัด A-A', hide: [],
+      title: 'หน้าตัด A-A (ตัดที่ระยะ 24.9–26.0 ม. จากต้นแนว)', bounds: {min: [-3.8, 24.9, -2.6], max: [18.9, 26.0, 6.9]}, labelStep: 2, dir: [0, 0.0005, -1], fov: 22, clip: [24.9, 26.0], capKind: 'A', badge: 'หน้าตัด A-A', hide: ['zones'],
       dl: [['shear pin', 'ตั้ง 1 ต้น เอียง 1 ต้น ø141 มม. ยาว 9 ม.'], ['กระสอบ', 'แนวลาด 3.00 ม.'], ['Screw Pile', '3.0 ม. ที่ปลายล่าง และ 2.0 ม. ฝั่ง back slope']],
       note: 'ชิ้นตัดหนา 1.1 ม. เห็น capbeam คอนกรีต horizontal drain รางระบายน้ำ ชั้นถนน และเสาเข็มสกรู 2 แถว'
     },
     secB: {
-      title: 'หน้าตัด B-B ตามแนวท่อลอด', bounds: {min: [-3.8, 43.7, -2.6], max: [18.9, 45.0, 6.9]}, labelStep: 2, dir: [0, 0.0005, -1], fov: 22, clip: [43.7, 45.0], capKind: 'B', badge: 'หน้าตัด B-B', hide: [],
+      title: 'หน้าตัด B-B ตามแนวท่อลอด', bounds: {min: [-3.8, 43.7, -2.6], max: [18.9, 45.0, 6.9]}, labelStep: 2, dir: [0, 0.0005, -1], fov: 22, clip: [43.7, 45.0], capKind: 'B', badge: 'หน้าตัด B-B', hide: ['zones'],
       dl: [['ท่อ', 'ค.ส.ล. ø0.60 ม. ลาด 1.5%'], ['ใต้ท่อ', 'ฐานคอนกรีตหยาบ และทรายถมบดอัด'], ['ลาดใต้บล็อก', 'หน้าเป็นกระสอบมีปีก ด้านในเป็นกระสอบป่านเรียงจากฐานเป็นรูปสามเหลี่ยม'], ['บ่อพัก', '1.10 × 1.10 ม. ฝั่ง back slope']],
       note: 'ผ่าตามแกนท่อ เห็นภายในท่อ ทรายถมบดอัดรอบท่อ (แถบโปร่งแสง) ชั้นถนน และบ่อพัก'
     },
@@ -1429,6 +1433,11 @@ footer{font-size:13px;color:var(--muted);border-top:1px solid var(--line);paddin
       title: 'ผังด้านบน', bounds: ALLB, labelStep: 5, dir: [-0.0002, 1, 0], dirP: [0, 1, 0.0002], badge: 'มองจากด้านบน', hide: [],
       dl: [['ฝั่งล่าง', 'แนวกระสอบและเสาเข็มสกรู 3.0 ม. (44 ต้น)'], ['ฝั่งบน', 'เสาเข็มสกรู 2.0 ม. 44 ต้น และรางระบายน้ำ'], ['ปากท่อ', 'เสาเข็ม 2.0 ม. 3 ต้นรอบบล็อกกระสอบ']],
       note: 'ตำแหน่งเสาเข็มทั้งหมดอ่านจากผังบริเวณก่อสร้าง แผ่นที่ 4/8'
+    },
+    zones: {
+      title: 'โซนกระสอบ 2 โซน', bounds: {min: [-2.5, 36.5, -0.6], max: [6.5, 48.6, 3.8]}, labelStep: 1, dir: [-0.75, 0.55, 0.63], badge: 'โซนกระสอบ', hide: [],
+      dl: [['โซน shear pin', 'กระสอบมีปีกแนวหลัก ถึงระยะ 43.15 ม. (shear pin และ capbeam ที่ 0–40 ม.)'], ['ช่องคั่นระหว่างโซน', '0.35 ม. (ตามผังแผ่น 4/8) เส้นสีส้มคือกึ่งกลางช่อง'], ['โซนท่อลอด', 'บล็อกกว้าง 2.6 ม. ที่ 43.5–46.1 ม. กระสอบป่านด้านในและกระสอบมีปีกที่ผิวหน้า'], ['ลำดับเรียง', 'เรียงโซน shear pin ให้เสร็จก่อน แล้วจึงเรียงโซนท่อลอด']],
+      note: 'ช่องคั่นมีขนาดเล็กเมื่อเทียบกับความยาวแนว 50 ม. จึงเห็นชัดเฉพาะเมื่อซูมเข้า ปิดป้ายโซนได้ที่ช่องติ๊กด้านล่าง'
     },
     culvert: {
       title: 'ท่อลอดที่ปลายแนว', bounds: {min: [-1.5, 41, -1], max: [10, 49, 3.5]}, labelStep: 1, dir: [-0.8, 0.32, 0.45], badge: 'ท่อลอด', hide: ['ground', 'road'],
@@ -1528,6 +1537,34 @@ footer{font-size:13px;color:var(--muted);border-top:1px solid var(--line);paddin
     return g;
   }
 
+  // zone marks: orange line along the 0.35 m joint (on the slope face and across the crest) + labels
+  function labelW(text, color){
+    var c = document.createElement('canvas'); c.width = 520; c.height = 96;
+    var x = c.getContext('2d');
+    x.font = 'bold 44px system-ui, sans-serif'; x.textAlign = 'center'; x.textBaseline = 'middle';
+    x.lineWidth = 9; x.strokeStyle = 'rgba(0,0,0,.8)'; x.strokeText(text, 260, 50);
+    x.fillStyle = color || '#ffffff'; x.fillText(text, 260, 50);
+    var t = new THREE.CanvasTexture(c);
+    var sp = new THREE.Sprite(new THREE.SpriteMaterial({map: t, depthTest: false, transparent: true}));
+    sp.renderOrder = 998;
+    return sp;
+  }
+  var zoneLabels = [];
+  (function(){
+    var gy = 43.325;
+    var pts = [T3([-0.55, gy, -0.38]), T3([0, gy, 0]), T3([3.0, gy, 2.07]), T3([3.0, gy, 2.2]), T3([3.6, gy, 2.2])];
+    var ln = new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts), new THREE.LineBasicMaterial({color: 0xff7a1a, depthTest: false, transparent: true}));
+    ln.renderOrder = 997;
+    zonesGroup.add(ln);
+    [['โซน shear pin', [1.5, 38.8, 3.4], '#ffd9a8'], ['โซนท่อลอด', [1.5, 46.4, 3.4], '#ffd9a8'], ['ช่องคั่น 0.35 ม.', [1.5, 43.325, 5.0], '#ff9a45']].forEach(function(d){
+      var sp = labelW(d[0], d[2]); sp.position.copy(T3(d[1])); zoneLabels.push(sp); zonesGroup.add(sp);
+    });
+  })();
+  function sizeZoneLabels(b){
+    var span = padB(b).span, k = Math.min(span * 0.09, 1.6);
+    zoneLabels.forEach(function(sp){ sp.scale.set(k * 5.4, k * 1.0, 1); });
+  }
+
   function makeControls(cam, el){
     var c = new THREE.OrbitControls(cam, el);
     c.enableDamping = true; c.dampingFactor = 0.08; c.autoRotateSpeed = 0.9; c.screenSpacePanning = true;
@@ -1581,6 +1618,7 @@ footer{font-size:13px;color:var(--muted);border-top:1px solid var(--line);paddin
     if (v.clip) setClip([new THREE.Plane(new THREE.Vector3(0, 0, -1), -v.clip[0]), new THREE.Plane(new THREE.Vector3(0, 0, 1), v.clip[1])]);
     else if (v.slider) applyCut(); else setClip([]);
     var b = viewBounds(v);
+    sizeZoneLabels(b);
     if (axesGroup){ scene.remove(axesGroup); axesGroup = null; }
     if (axesOn){ axesGroup = makeAxes(b, v.labelStep, v.kind === 'mat' ? b.min : null); scene.add(axesGroup); }
     fitCam(camera, controls, b, viewDir(v), v.fov, isMat ? 1.25 : 0.95);
