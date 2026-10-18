@@ -1807,9 +1807,13 @@ footer{font-size:13px;color:var(--muted);border-top:1px solid var(--line);paddin
     var craneBase = cyl(0.42, 0.9, M_ORANGE, truck, 0, 0, 1.6, 'z');   // moved per frame
     var legL = box(0.25, 0.25, 0.8, M_RED, truck, -1.5, -2.0, 0.5), legR = box(0.25, 0.25, 0.8, M_RED, truck, 1.5, -2.0, 0.5);
     var column = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.5, 1.0), M_ORANGE); toolRoot.add(column);
-    var boom = new THREE.Mesh(new THREE.BoxGeometry(1, 0.32, 0.32), M_ORANGE); toolRoot.add(boom);
+    var boom = new THREE.Mesh(new THREE.BoxGeometry(1, 0.32, 0.32), M_ORANGE); toolRoot.add(boom);       // upper arm (fixed length)
+    var boom2 = new THREE.Mesh(new THREE.BoxGeometry(1, 0.26, 0.26), M_ORANGE); toolRoot.add(boom2);     // fore arm (fixed length)
+    var pins = [0, 1, 2].map(function(){ var pm = new THREE.Mesh(new THREE.CylinderGeometry(0.17, 0.17, 0.42, 14), M_GREY); toolRoot.add(pm); return pm; });   // joints, axis along the road
+    var ram = new THREE.Mesh(new THREE.BoxGeometry(1, 0.12, 0.12), M_GREY); toolRoot.add(ram);          // hydraulic ram of the shoulder
     var rotary = cyl(0.24, 0.9, M_BLUE, toolRoot, 0, 0, 0, 'z');
-    column.visible = boom.visible = rotary.visible = false;
+    column.visible = boom.visible = boom2.visible = ram.visible = rotary.visible = false;
+    pins.forEach(function(pm){ pm.visible = false; });
     var truckPile = null;
     // workers (hand drive)
     function worker(){
@@ -1841,16 +1845,28 @@ footer{font-size:13px;color:var(--muted);border-top:1px solid var(--line);paddin
     }
     function jobLift(j, t){ return t < j.ts ? 0 : j.len * (1 - clamp01((t - j.ts) / j.dur)); }
     function activeJob(jobs, t){ for (var i = 0; i < jobs.length; i++){ if (t >= jobs[i].ts - 0.45 && t <= jobs[i].ts + jobs[i].dur + 0.1) return jobs[i]; } return null; }
-    function placeBeam(p0, p1){
+    function placeBeam(me, p0, p1){
       var d = new THREE.Vector3(p1[0] - p0[0], p1[1] - p0[1], p1[2] - p0[2]), len = d.length();
-      boom.position.set((p0[0] + p1[0]) / 2, (p0[1] + p1[1]) / 2, (p0[2] + p1[2]) / 2);
-      boom.scale.set(len, 1, 1);
-      boom.quaternion.setFromUnitVectors(new THREE.Vector3(1, 0, 0), d.normalize());
+      me.position.set((p0[0] + p1[0]) / 2, (p0[1] + p1[1]) / 2, (p0[2] + p1[2]) / 2);
+      me.scale.set(len, 1, 1);
+      me.quaternion.setFromUnitVectors(new THREE.Vector3(1, 0, 0), d.normalize());
+    }
+    var ARM1 = 2.7, ARM2 = 2.7;     // two rigid links: the reach comes from the joint angles, not from telescoping
+    // two-link inverse kinematics in the vertical plane across the road (x, z); elbow up
+    function elbowOf(p0, e){
+      var dx = e[0] - p0[0], dz = e[1] - p0[1], d = Math.max(0.3, Math.min(ARM1 + ARM2 - 0.02, Math.hypot(dx, dz)));
+      var ux = dx / Math.hypot(dx, dz), uz = dz / Math.hypot(dx, dz);
+      var a = (ARM1 * ARM1 - ARM2 * ARM2 + d * d) / (2 * d), h = Math.sqrt(Math.max(0, ARM1 * ARM1 - a * a));
+      var mx = p0[0] + ux * a, mz = p0[1] + uz * a;
+      var c1 = [mx - uz * h, mz + ux * h], c2 = [mx + uz * h, mz - ux * h];
+      var el = c1[1] > c2[1] ? c1 : c2;
+      return [el[0], el[1], p0[0] + ux * d, p0[1] + uz * d];
     }
     function updateTruck(t){
       var side = t >= TL[1][0] && t <= TL[1][1] + 0.5, back = t >= TL[2][0] && t <= TL[2][1] + 0.5;
       var on = side || back;
-      truck.visible = column.visible = boom.visible = rotary.visible = on;
+      truck.visible = column.visible = boom.visible = boom2.visible = ram.visible = rotary.visible = on;
+      pins.forEach(function(pm){ pm.visible = on; });
       if (!on) return;
       var jobs, xt, xp, y, xh0;
       if (side){
@@ -1866,7 +1882,7 @@ footer{font-size:13px;color:var(--muted);border-top:1px solid var(--line);paddin
       // crane base follows the pivot (moved to the working side of the truck bed)
       craneBase.position.set(xp - xt, yb - y, 1.6);
       var legx = side ? -1.5 : 1.5; legL.position.set(legx, -2.0, 0.5); legR.position.set(legx, 1.2, 0.5);
-      column.position.set(xp, yb, ROAD_Z + 2.31); column.scale.set(1, 1, 1.9);
+      column.position.set(xp, yb, ROAD_Z + 1.9); column.scale.set(1, 1, 1.4);
       var j = activeJob(jobs, t);
       var done = jobs.filter(function(q){ return q.ts + q.dur < t; }).length;
       var jj = j || jobs[Math.min(jobs.length - 1, done)];
@@ -1874,7 +1890,15 @@ footer{font-size:13px;color:var(--muted);border-top:1px solid var(--line);paddin
       var lift = j ? jobLift(j, t) : 0.8;
       var xh = jj.x;
       rotary.position.set(xh, y, gz + lift + 0.5);
-      placeBeam([xp, yb, ROAD_Z + 3.26], [xh, y, gz + lift + 1.0]);
+      var P0 = [xp, ROAD_Z + 2.6], E = [xh, gz + lift + 1.0];
+      var ik = elbowOf(P0, E);
+      var Pe = [ik[0], yb, ik[1]], Pt = [ik[2], y, ik[3]];
+      placeBeam(boom, [xp, yb, P0[1]], Pe);
+      placeBeam(boom2, Pe, Pt);
+      pins[0].position.set(xp, yb, P0[1]); pins[1].position.set(Pe[0], yb, Pe[2]); pins[2].position.set(Pt[0], y, Pt[2]);
+      // hydraulic ram of the shoulder: from the column to the middle of the upper arm
+      placeBeam(ram, [xp, yb + 0.35, ROAD_Z + 1.5], [(xp + Pe[0]) / 2, yb + 0.35, (P0[1] + Pe[2]) / 2 - 0.1]);
+      rotary.position.set(xh, y, gz + lift + 0.5);
     }
     function updatePiles(t){
       var m4 = new THREE.Matrix4(), tr = new THREE.Matrix4(), rz = new THREE.Matrix4(), out = new THREE.Matrix4(), zero = new THREE.Matrix4().makeScale(0, 0, 0);
@@ -1899,24 +1923,25 @@ footer{font-size:13px;color:var(--muted);border-top:1px solid var(--line);paddin
       if (!on || !handJobs.length) return;
       var y = seqY(handJobs, t, handJobs[0].y - 1.5, TL[3][0]);
       var j = activeJob(handJobs, t) || handJobs[Math.min(handJobs.length - 1, Math.max(0, handJobs.filter(function(q){ return q.ts < t; }).length - 1))];
-      var lift = jobLift(j, t), act = t >= j.ts - 0.2 && t <= j.ts + j.dur;
-      var ang = act ? clamp01((t - j.ts) / j.dur) * 12 * Math.PI * 0.5 : 0;
+      var lift = jobLift(j, t);
       var gl = j.gz + j.len;                       // ground level at the pile
+      // the machine and the reaction bar stay fixed in direction: only the screw pile turns itself down
       drive.position.set(j.x, y, gl + lift);
+      drive.rotation.z = 0;
       drive.visible = true;
-      bar.position.set(0.85 * Math.cos(ang), 0.85 * Math.sin(ang), 0.12); bar.rotation.z = ang;
-      w1.position.set(j.x + 1.5 * Math.cos(ang), y + 1.5 * Math.sin(ang), 0);   // holds the end of the bar
-      w1.rotation.z = ang + Math.PI / 2;
-      w2.position.set(j.x + 0.55, y - 0.55, 0);                                  // steadies the machine
-      w2.rotation.z = Math.PI / 2 + 0.6;
+      bar.position.set(0.85, 0, 0.12); bar.rotation.z = 0;
+      w1.position.set(j.x + 0.55, y - 0.5, 0);      // worker 1 holds the drill head
+      w1.rotation.z = Math.PI / 2 + 0.5;
+      w2.position.set(j.x + 1.75, y, 0);            // worker 2 holds the end of the bar against the torque
+      w2.rotation.z = Math.PI / 2;
       w1.position.z = Math.max(0, 0.685 * w1.position.x); w2.position.z = Math.max(0, 0.685 * w2.position.x);   // they stand on the original slope
     }
 
     var STEPS = [
       ['1  ลาดดินเดิมก่อนเริ่มงาน', 'ลาดดินด้านข้างถนนยังเป็นดินเปล่า ยังไม่มีกระสอบและเสาเข็ม capbeam กับ shear pin อยู่ที่ขอบถนนแล้ว ผิวลาดเดิมประมาณ 34° เป็นจุดเริ่มต้นของการเรียงกระสอบ'],
-      ['2  ติดตั้งเสาเข็มสกรูฝั่ง side slope ด้วยรถกดเสาเข็ม', 'รถกดเสาเข็มจอดบนถนนเท่านั้น ยื่นบูมลงมากดเสาเข็มสกรูยาว 3.0 ม. ที่ปลายล่างของลาด ระยะบูมไม่เกิน 3.5 ม. กดทีละต้นห่างกัน 1.00 ม. แล้วเลื่อนรถไปตามแนวถนน (ขนาดรถในแอนิเมชันเป็นรูปทรงสมมติ)'],
-      ['3  ติดตั้งเสาเข็มสกรูฝั่ง back slope ด้วยรถกดเสาเข็ม', 'ย้ายบูมไปทำฝั่ง back slope รถยังอยู่บนถนน ยื่นบูมข้ามรางระบายน้ำลงไปกดเสาเข็มสกรูยาว 2.0 ม. ห่างกัน 1.00 ม. ระยะบูมไม่เกิน 3.5 ม. แล้วเลื่อนรถไปตามแนวถนน'],
-      ['4  โซนท่อลอด: ติดตั้งเสาเข็มสกรูด้วยเครื่อง hand drive', 'เสาเข็มสกรูยาว 2.0 ม. ที่แนวท่อลอด 3 ต้นอยู่ที่เชิงลาด รถเอื้อมไม่ถึง จึงใช้เครื่องมือ hand drive ที่ควบคุมด้วยคน ลงไปหมุนกดเสาเข็มตามภาพถ่าย คนหนึ่งจับคานกันเครื่องหมุน อีกคนคุมเครื่อง เมื่อเสาเข็มครบทุกโซนแล้วจึงเริ่มขุดและเรียงกระสอบ'],
+      ['2  ติดตั้งเสาเข็มสกรูฝั่ง side slope ด้วยรถกดเสาเข็ม', 'รถกดเสาเข็มจอดบนถนนเท่านั้น เหยียดแขนเครนลงมากดเสาเข็มสกรูยาว 3.0 ม. ที่ปลายล่างของลาด แขนมีความยาวคงที่ ไม่ยืดหด ระยะเอื้อมมาจากการหมุนข้อต่อแบบรถเครน ระยะไม่เกิน 3.5 ม. กดทีละต้นห่างกัน 1.00 ม. แล้วเลื่อนรถไปตามแนวถนน (ขนาดรถในแอนิเมชันเป็นรูปทรงสมมติ)'],
+      ['3  ติดตั้งเสาเข็มสกรูฝั่ง back slope ด้วยรถกดเสาเข็ม', 'ย้ายแขนเครนไปทำฝั่ง back slope รถยังอยู่บนถนน หมุนข้อต่อให้แขนข้ามรางระบายน้ำลงไปกดเสาเข็มสกรูยาว 2.0 ม. ห่างกัน 1.00 ม. ระยะเอื้อมไม่เกิน 3.5 ม. แล้วเลื่อนรถไปตามแนวถนน'],
+      ['4  โซนท่อลอด: ติดตั้งเสาเข็มสกรูด้วยเครื่อง hand drive', 'เสาเข็มสกรูยาว 2.0 ม. ที่แนวท่อลอด 3 ต้นอยู่ที่เชิงลาด รถเอื้อมไม่ถึง จึงใช้เครื่องมือ hand drive ที่ควบคุมด้วยคน คนหนึ่งจับหัวสว่านให้อยู่บนหัวเสาเข็ม อีกคนจับท่อนเหล็กไว้ต้านแรงบิดไม่ให้เครื่องหมุนตาม เสาเข็มสกรูจะหมุนตัวเองลงไปในดิน ไม่มีคนหรือเครื่องมือหมุนนอกจากตัวเสาเข็ม เมื่อเสาเข็มครบทุกโซนแล้วจึงเริ่มขุดและเรียงกระสอบ'],
       ['5  ขุดรับกระสอบใบล่าง และดึงแนวลาดใหม่', 'ขุดดินเฉพาะที่วางกระสอบใบล่างสุดให้นั่งได้ระดับข้างเสาเข็มที่กั้นไว้ แล้วปรับผิวลาดใหม่เป็นเส้นตรงจากหลังกระสอบใบล่างขึ้นไปชนมุม capbeam ตามแบบ A-A ลาดใหม่ชันกว่าลาดเดิมเล็กน้อย'],
       ['6  วางกระสอบแถวแรกชิดแนวลาด', 'วางกระสอบแถวแรกของโซน shear pin ให้ชิดแนวลาดดิน โดยให้ส่วนบรรจุดินชนลาด และปากกระสอบวางพาดขึ้นไปตามแนวลาด บดอัดกระสอบและปรับผิวให้เรียบ'],
       ['7  วางต้นไม้ที่รอยต่อระหว่างกระสอบ', 'เมื่อเรียงกระสอบครบทั้งชั้นแล้ว จึงวางต้นกล้าและกอดอกไม้ที่รอยต่อระหว่างกระสอบตามแนวนอน (ทุก 3 ชั้น ห่างประมาณ 0.7 ม.) เติมวัสดุปลูกที่ร่องรอยต่อก่อนวางต้นไม้ ให้รากอยู่ระหว่างกระสอบ ต้นไม้ชี้ออกจากผิวลาด แล้วจึงเรียงกระสอบชั้นถัดไปทับ'],
