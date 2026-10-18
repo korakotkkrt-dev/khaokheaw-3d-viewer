@@ -143,10 +143,10 @@ footer{font-size:13px;color:var(--muted);border-top:1px solid var(--line);paddin
 
   <section id="laying" aria-labelledby="h-laying">
     <h2 id="h-laying">ขั้นตอนการเรียงกระสอบมีปีก</h2>
-    <p>แอนิเมชันสามมิติจากโมเดลนี้ แสดงช่วง 35–46.5 ม. จากต้นแนว เริ่มจากลาดดินเปล่า ขั้นที่ 2–4 ติดตั้งเสาเข็มสกรูให้ครบทุกโซนก่อน (รถกดเสาเข็มบนถนนขั้น 2–3 และเครื่อง hand drive ที่ท่อลอดขั้น 4) ขั้นที่ 5 ขุดรับกระสอบใบล่างและดึงแนวลาดใหม่ ขั้นที่ 6–11 เรียงโซน shear pin ให้เสร็จทั้งแนว แล้วขั้นที่ 12 จึงทำโซนท่อลอด กด “เล่น” เพื่อดูต่อเนื่อง หรือเลือกขั้นตอนเอง ลากเพื่อหมุนดูได้ระหว่างเล่น</p>
+    <p>แอนิเมชันสามมิติจากโมเดลนี้ แสดงช่วง 35–46.5 ม. จากต้นแนว ท่อลอดและบ่อพักก่อสร้างเรียบร้อยแล้ว แสดงเฉพาะขั้นตอนการเรียงกระสอบ เริ่มจากลาดดินเปล่า ขั้นที่ 2 เคลียร์พื้นที่เรียงกระสอบ ขั้นที่ 3–5 ติดตั้งเสาเข็มสกรูให้ครบทุกโซนก่อน (รถกดเสาเข็มบนถนนขั้น 3–4 และเครื่อง hand drive ที่ท่อลอดขั้น 5) ขั้นที่ 6 ขุดรับกระสอบใบล่างและดึงแนวลาดใหม่ ขั้นที่ 7–12 เรียงโซน shear pin ให้เสร็จทั้งแนว แล้วขั้นที่ 13 จึงทำโซนท่อลอด กด “เล่น” เพื่อดูต่อเนื่อง หรือเลือกขั้นตอนเอง ลากเพื่อหมุนดูได้ระหว่างเล่น</p>
     <div class="tabs" id="lay-steps" role="group" aria-label="เลือกขั้นตอน">
       <button aria-pressed="true">1</button><button aria-pressed="false">2</button><button aria-pressed="false">3</button>
-      <button aria-pressed="false">4</button><button aria-pressed="false">5</button><button aria-pressed="false">6</button><button aria-pressed="false">7</button><button aria-pressed="false">8</button><button aria-pressed="false">9</button><button aria-pressed="false">10</button><button aria-pressed="false">11</button><button aria-pressed="false">12</button>
+      <button aria-pressed="false">4</button><button aria-pressed="false">5</button><button aria-pressed="false">6</button><button aria-pressed="false">7</button><button aria-pressed="false">8</button><button aria-pressed="false">9</button><button aria-pressed="false">10</button><button aria-pressed="false">11</button><button aria-pressed="false">12</button><button aria-pressed="false">13</button>
     </div>
     <div class="stage" id="lay-stage" style="height:min(56vh,480px)"></div>
     <div class="toolbar">
@@ -1682,8 +1682,8 @@ footer{font-size:13px;color:var(--muted);border-top:1px solid var(--line);paddin
   var WY0 = 35.0, WY1 = 46.5, ZSPLIT = 43.5, ZEND = 46.1, NCOURSE = 14;
   var LAYCP = [new THREE.Plane(new THREE.Vector3(0, 0, -1), -WY0), new THREE.Plane(new THREE.Vector3(0, 0, 1), WY1)];
   var pileMeshes = [], pileJobs = {}, jobList = [];
-  var TL = [[0, 3, 0, 0], [3, 15, 0, 0], [15, 29, 0, 0], [29, 43, 0, 0], [43, 48, 0, 0], [48, 52, 0, 1], [52, 56, 1, 2], [56, 60, 2, 3], [60, 68, 3, 7], [68, 80, 7, NCOURSE], [80, 83, NCOURSE, NCOURSE], [83, 98, NCOURSE, 2 * NCOURSE]];
-  var TT = 98;
+  var TL = [[0, 3, 0, 0], [3, 8, 0, 0], [8, 21, 0, 0], [21, 42, 0, 0], [42, 56, 0, 0], [56, 61, 0, 0], [61, 65, 0, 1], [65, 69, 1, 2], [69, 73, 2, 3], [73, 81, 3, 7], [81, 93, 7, NCOURSE], [93, 96, NCOURSE, NCOURSE], [96, 111, NCOURSE, 2 * NCOURSE]];
+  var TT = 111;
   try {
     layRenderer = newRenderer(layHost);
     layScene = new THREE.Scene(); lights(layScene);
@@ -1764,7 +1764,7 @@ footer{font-size:13px;color:var(--muted);border-top:1px solid var(--line);paddin
       slope:   {b: {min: [-1.0, 38.0, 0.0], max: [5.0, 46.2, 2.4]}, dir: [-0.85, 0.5, 0.75]},
       culvert: {b: {min: [-1.5, 41.0, -0.2], max: [4.5, 47.5, 2.6]}, dir: [-0.8, 0.55, 0.7]}
     };
-    var STEPCAM = ['slope', 'wide', 'wide', 'culvert', 'slope', 'slope', 'slope', 'slope', 'slope', 'slope', 'slope', 'culvert'];
+    var STEPCAM = ['slope', 'slope', 'wide', 'wide', 'culvert', 'slope', 'slope', 'slope', 'slope', 'slope', 'slope', 'slope', 'culvert'];
     var curCam = '';
     function resizeLay(){
       var w = layHost.clientWidth, h = layHost.clientHeight;
@@ -1782,9 +1782,9 @@ footer{font-size:13px;color:var(--muted);border-top:1px solid var(--line);paddin
     var toeJobs = jobList.filter(function(j){ return j.kind === 'toe'; }).sort(function(a, b){ return a.y - b.y; });
     var backJobs = jobList.filter(function(j){ return j.kind === 'back'; }).sort(function(a, b){ return b.y - a.y; });
     var handJobs = jobList.filter(function(j){ return j.kind === 'hand'; }).sort(function(a, b){ return a.y - b.y; });
-    toeJobs.forEach(function(j, i){ j.ts = TL[1][0] + 1.4 + i * 1.1; j.dur = 0.85; });
-    backJobs.forEach(function(j, i){ j.ts = TL[2][0] + 3.4 + i * 1.1; j.dur = 0.85; });
-    handJobs.forEach(function(j, i){ j.ts = TL[3][0] + 1.5 + i * 4.2; j.dur = 3.0; });
+    toeJobs.forEach(function(j, i){ j.ts = TL[2][0] + 1.4 + i * 1.1; j.dur = 0.85; });
+    backJobs.forEach(function(j, i){ j.ts = TL[3][0] + 6.4 + i * 1.1; j.dur = 0.85; });
+    handJobs.forEach(function(j, i){ j.ts = TL[4][0] + 1.5 + i * 4.2; j.dur = 3.0; });
 
     // ---- machines (metres, SketchUp axes: x across the road, y along the road, z up) ----
     var toolRoot = new THREE.Group(); toolRoot.rotation.x = -Math.PI / 2; layScene.add(toolRoot);
@@ -1830,6 +1830,19 @@ footer{font-size:13px;color:var(--muted);border-top:1px solid var(--line);paddin
     cyl(0.13, 0.32, M_GREY, drive, 0, 0, 0.2, 'z'); cyl(0.1, 0.22, M_RED, drive, 0, 0, 0.47, 'z'); box(0.12, 0.2, 0.2, M_DARK, drive, 0, 0, 0.7);
     var bar = box(1.7, 0.07, 0.07, M_GREY, drive, 0.85, 0, 0.12);
 
+    // cleared area on the original slope: zone 1 footprint (toe piles to the capbeam), darker brown, swept along the road
+    var CLEARCP = new THREE.Plane(new THREE.Vector3(0, 0, 1), WY0);       // keeps y <= constant (three z = -y)
+    var TANA2 = Math.tan(34.4 * Math.PI / 180);
+    var clearGeo = new THREE.BufferGeometry();
+    (function(){
+      var X0 = -0.05, X1 = 3.0, Ya = -0.65, Yb = 43.15, off = 0.012, v = [];
+      [[X0, Ya], [X1, Ya], [X1, Yb], [X0, Yb]].forEach(function(c){ v.push(c[0], c[1], c[0] * TANA2 + off); });
+      clearGeo.setAttribute('position', new THREE.Float32BufferAttribute(v, 3));
+      clearGeo.setIndex([0, 1, 2, 0, 2, 3]); clearGeo.computeVertexNormals();
+    })();
+    var clearPatch = new THREE.Mesh(clearGeo, new THREE.MeshLambertMaterial({color: 0x6f4a2c, side: THREE.DoubleSide, clippingPlanes: [LAYCP[0], CLEARCP], polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2}));
+    toolRoot.add(clearPatch); clearPatch.visible = false;
+
     function lerp(a, b, f){ return a + (b - a) * f; }
     function clamp01(v){ return Math.max(0, Math.min(1, v)); }
     var ROAD_Z = 2.16;
@@ -1863,41 +1876,48 @@ footer{font-size:13px;color:var(--muted);border-top:1px solid var(--line);paddin
       return [el[0], el[1], p0[0] + ux * d, p0[1] + uz * d];
     }
     function updateTruck(t){
-      var side = t >= TL[1][0] && t <= TL[1][1] + 0.5, back = t >= TL[2][0] && t <= TL[2][1] + 0.5;
-      var on = side || back;
+      var A0 = TL[2][0], B0 = TL[3][0], B1 = TL[3][1];
+      var phase = null;
+      if (t >= A0 && t < B0 + 2.6) phase = 'A';                  // lane next to the side slope, driving +y
+      else if (t >= B0 + 3.2 && t <= B1 + 0.2) phase = 'B';      // comes back in the other lane (back slope side), driving -y
+      var on = phase !== null, jobs, xt, xp, y = 0, rot = 0, s = 1, side = phase === 'A';
+      if (on){
+        if (side){
+          jobs = toeJobs; xt = 4.8; xp = 3.45;
+          var yl = jobs[jobs.length - 1].y;
+          y = t <= B0 ? seqY(jobs, t, jobs[0].y - 3.0, A0) : lerp(yl, 54, Math.pow(clamp01((t - B0) / 2.6), 1.6));
+        } else {
+          jobs = backJobs; xt = 7.8; xp = 8.85; rot = Math.PI; s = -1;
+          var lastB = jobs[jobs.length - 1], lastEnd = lastB.ts + lastB.dur + 0.1;
+          y = t <= lastEnd ? seqY(jobs, t, 54, B0 + 3.2) : lerp(lastB.y, 26, clamp01((t - lastEnd) / 3.2));
+        }
+        on = y < 49.8 && y > 29.5;                                  // out of frame: not shown
+      }
       truck.visible = column.visible = boom.visible = boom2.visible = ram.visible = rotary.visible = on;
       pins.forEach(function(pm){ pm.visible = on; });
       if (!on) return;
-      var jobs, xt, xp, y, xh0;
-      if (side){
-        jobs = toeJobs; xt = 4.8; xp = 3.45; y = seqY(jobs, t, jobs[0].y - 3.0, TL[1][0]);
-      } else {
-        jobs = backJobs;
-        var f = clamp01((t - TL[2][0]) / 1.8);
-        xt = lerp(4.8, 7.8, f); xp = lerp(3.45, 8.85, f);
-        y = seqY(jobs, t, toeJobs[toeJobs.length - 1].y, TL[2][0] + 1.8);
-      }
       truck.position.set(xt, y, ROAD_Z);
-      var yb = y - 0.4;
-      // crane base follows the pivot (moved to the working side of the truck bed)
-      craneBase.position.set(xp - xt, yb - y, 1.6);
-      var legx = side ? -1.5 : 1.5; legL.position.set(legx, -2.0, 0.5); legR.position.set(legx, 1.2, 0.5);
+      truck.rotation.z = rot;
+      var yb = y - 0.4 * s;
+      craneBase.position.set((xp - xt) * s, (yb - y) * s, 1.6);
+      var legx = (side ? -1.5 : 1.5) * s; legL.position.set(legx, -2.0 * s, 0.5); legR.position.set(legx, 1.2 * s, 0.5);
       column.position.set(xp, yb, ROAD_Z + 1.9); column.scale.set(1, 1, 1.4);
-      var j = activeJob(jobs, t);
+      var travelling = y > 47.5 || y < 31.5;
+      var j = travelling ? null : activeJob(jobs, t);
       var done = jobs.filter(function(q){ return q.ts + q.dur < t; }).length;
       var jj = j || jobs[Math.min(jobs.length - 1, done)];
       var gz = jj.gz + jj.len;                       // ground level at the pile (head of the finished pile)
-      var lift = j ? jobLift(j, t) : 0.8;
-      var xh = jj.x;
-      rotary.position.set(xh, y, gz + lift + 0.5);
-      var P0 = [xp, ROAD_Z + 2.6], E = [xh, gz + lift + 1.0];
+      var xh, lift, zE;
+      if (travelling){ xh = xp + (side ? -0.8 : 0.8); lift = 0; zE = ROAD_Z + 4.3; }      // arm folded for driving
+      else { xh = jj.x; lift = j ? jobLift(j, t) : 0.8; zE = gz + lift + 1.0; }
+      var P0 = [xp, ROAD_Z + 2.6], E = [xh, zE];
       var ik = elbowOf(P0, E);
       var Pe = [ik[0], yb, ik[1]], Pt = [ik[2], y, ik[3]];
       placeBeam(boom, [xp, yb, P0[1]], Pe);
       placeBeam(boom2, Pe, Pt);
       pins[0].position.set(xp, yb, P0[1]); pins[1].position.set(Pe[0], yb, Pe[2]); pins[2].position.set(Pt[0], y, Pt[2]);
-      // hydraulic ram of the shoulder: from the column to the middle of the upper arm
-      placeBeam(ram, [xp, yb + 0.35, ROAD_Z + 1.5], [(xp + Pe[0]) / 2, yb + 0.35, (P0[1] + Pe[2]) / 2 - 0.1]);
+      placeBeam(ram, [xp, yb + 0.35 * s, ROAD_Z + 1.5], [(xp + Pe[0]) / 2, yb + 0.35 * s, (P0[1] + Pe[2]) / 2 - 0.1]);
+      rotary.visible = !travelling;
       rotary.position.set(xh, y, gz + lift + 0.5);
     }
     function updatePiles(t){
@@ -1918,10 +1938,10 @@ footer{font-size:13px;color:var(--muted);border-top:1px solid var(--line);paddin
       });
     }
     function updateHand(t){
-      var on = t >= TL[3][0] && t <= TL[3][1] + 0.3;
+      var on = t >= TL[4][0] && t <= TL[4][1] + 0.3;
       hand.visible = on;
       if (!on || !handJobs.length) return;
-      var y = seqY(handJobs, t, handJobs[0].y - 1.5, TL[3][0]);
+      var y = seqY(handJobs, t, handJobs[0].y - 1.5, TL[4][0]);
       var j = activeJob(handJobs, t) || handJobs[Math.min(handJobs.length - 1, Math.max(0, handJobs.filter(function(q){ return q.ts < t; }).length - 1))];
       var lift = jobLift(j, t);
       var gl = j.gz + j.len;                       // ground level at the pile
@@ -1938,18 +1958,19 @@ footer{font-size:13px;color:var(--muted);border-top:1px solid var(--line);paddin
     }
 
     var STEPS = [
-      ['1  ลาดดินเดิมก่อนเริ่มงาน', 'ลาดดินด้านข้างถนนยังเป็นดินเปล่า ยังไม่มีกระสอบและเสาเข็ม capbeam กับ shear pin อยู่ที่ขอบถนนแล้ว ผิวลาดเดิมประมาณ 34° เป็นจุดเริ่มต้นของการเรียงกระสอบ'],
-      ['2  ติดตั้งเสาเข็มสกรูฝั่ง side slope ด้วยรถกดเสาเข็ม', 'รถกดเสาเข็มจอดบนถนนเท่านั้น เหยียดแขนเครนลงมากดเสาเข็มสกรูยาว 3.0 ม. ที่ปลายล่างของลาด แขนมีความยาวคงที่ ไม่ยืดหด ระยะเอื้อมมาจากการหมุนข้อต่อแบบรถเครน ระยะไม่เกิน 3.5 ม. กดทีละต้นห่างกัน 1.00 ม. แล้วเลื่อนรถไปตามแนวถนน (ขนาดรถในแอนิเมชันเป็นรูปทรงสมมติ)'],
-      ['3  ติดตั้งเสาเข็มสกรูฝั่ง back slope ด้วยรถกดเสาเข็ม', 'ย้ายแขนเครนไปทำฝั่ง back slope รถยังอยู่บนถนน หมุนข้อต่อให้แขนข้ามรางระบายน้ำลงไปกดเสาเข็มสกรูยาว 2.0 ม. ห่างกัน 1.00 ม. ระยะเอื้อมไม่เกิน 3.5 ม. แล้วเลื่อนรถไปตามแนวถนน'],
-      ['4  โซนท่อลอด: ติดตั้งเสาเข็มสกรูด้วยเครื่อง hand drive', 'เสาเข็มสกรูยาว 2.0 ม. ที่แนวท่อลอด 3 ต้นอยู่ที่เชิงลาด รถเอื้อมไม่ถึง จึงใช้เครื่องมือ hand drive ที่ควบคุมด้วยคน คนหนึ่งจับหัวสว่านให้อยู่บนหัวเสาเข็ม อีกคนจับท่อนเหล็กไว้ต้านแรงบิดไม่ให้เครื่องหมุนตาม เสาเข็มสกรูจะหมุนตัวเองลงไปในดิน ไม่มีคนหรือเครื่องมือหมุนนอกจากตัวเสาเข็ม เมื่อเสาเข็มครบทุกโซนแล้วจึงเริ่มขุดและเรียงกระสอบ'],
-      ['5  ขุดรับกระสอบใบล่าง และดึงแนวลาดใหม่', 'ขุดดินเฉพาะที่วางกระสอบใบล่างสุดให้นั่งได้ระดับข้างเสาเข็มที่กั้นไว้ แล้วปรับผิวลาดใหม่เป็นเส้นตรงจากหลังกระสอบใบล่างขึ้นไปชนมุม capbeam ตามแบบ A-A ลาดใหม่ชันกว่าลาดเดิมเล็กน้อย'],
-      ['6  วางกระสอบแถวแรกชิดแนวลาด', 'วางกระสอบแถวแรกของโซน shear pin ให้ชิดแนวลาดดิน โดยให้ส่วนบรรจุดินชนลาด และปากกระสอบวางพาดขึ้นไปตามแนวลาด บดอัดกระสอบและปรับผิวให้เรียบ'],
-      ['7  วางต้นไม้ที่รอยต่อระหว่างกระสอบ', 'เมื่อเรียงกระสอบครบทั้งชั้นแล้ว จึงวางต้นกล้าและกอดอกไม้ที่รอยต่อระหว่างกระสอบตามแนวนอน (ทุก 3 ชั้น ห่างประมาณ 0.7 ม.) เติมวัสดุปลูกที่ร่องรอยต่อก่อนวางต้นไม้ ให้รากอยู่ระหว่างกระสอบ ต้นไม้ชี้ออกจากผิวลาด แล้วจึงเรียงกระสอบชั้นถัดไปทับ'],
-      ['8  วางกระสอบใบถัดไปในแถวเดียวกัน', 'วางกระสอบใบถัดไปให้ส่วนบรรจุดินชิดใบก่อนหน้าและทับบริเวณปีกของใบก่อนหน้า ปีกอีกด้านพาดบนกระสอบใบก่อนหน้า'],
-      ['9  ชั้นถัดไปเรียงสับหว่าง', 'เมื่อเริ่มเรียงชั้นถัดไป ให้วางส่วนบรรจุดินของชั้นบนอยู่ระหว่างส่วนบรรจุดินของชั้นล่าง 2 ใบ และปากกระสอบพาดขึ้นตามแนวลาด'],
-      ['10  พับปากและปีกทุกใบเก็บใต้กระสอบ เมื่อเรียงถึงชั้นบนสุด', 'เมื่อเรียงถึงชั้นบนสุดแล้ว ปากกระสอบและปีกของทุกใบ ทั้งชั้นบนและชั้นล่าง ต้องพับกลับเก็บไว้ใต้กระสอบ ไม่ให้โผล่พ้นแนวกำแพง จากนั้นปิดปลายแถวด้วยกระสอบครึ่งใบ เหลือเฉพาะส่วนใส่ดิน'],
-      ['11  ชั้นบนทับชั้นล่างไม่น้อยกว่า 50%', 'การเรียงในแต่ละชั้นควรให้กระสอบชั้นบนทับกระสอบชั้นล่างไม่ต่ำกว่าร้อยละ 50 (ในแบบ เรียงสลับครึ่งใบทุกชั้น) โซน shear pin เรียงเสร็จทั้งแนวแล้ว จึงไปทำโซนท่อลอดในขั้นต่อไป'],
-      ['12  โซนท่อลอด: กระสอบป่านใส่ทรายด้านใน กระสอบมีปีกที่ผิวหน้า', 'ขุดดินบริเวณท่อลอดและวางท่อ ค.ส.ล. ก่อน จากนั้นเริ่มจากกระสอบป่านใส่ทรายใบหน้าสุดที่วางนอนบนดิน เรียงเป็นชั้นแนวนอนซ้อนกันขึ้นมาเป็นรูปสามเหลี่ยมจนชนหน้า capbeam เว้นช่องให้ท่อพาดผ่านโดยปากท่อเปิดโล่ง ผิวหน้าสุดเรียงด้วยกระสอบมีปีกชั้นเดียวกับโซนแรก โดยเริ่มที่ระดับเดียวกับกระสอบป่านใบหน้าสุด']
+      ['1  ลาดดินเดิมก่อนเริ่มงาน', 'ลาดดินด้านข้างถนนยังเป็นดินเปล่า ยังไม่มีกระสอบและเสาเข็ม ท่อลอด บ่อพัก capbeam และ shear pin ก่อสร้างเรียบร้อยแล้ว ผิวลาดเดิมประมาณ 34° แอนิเมชันนี้แสดงเฉพาะขั้นตอนการเรียงกระสอบ'],
+      ['2  เคลียร์พื้นที่เรียงกระสอบ', 'ถางพืชและเคลียร์ผิวดินบริเวณที่จะเรียงกระสอบ กว้างตามแนวลาดจากปลายเสาเข็มถึงขอบ capbeam (พื้นที่สีน้ำตาลเข้มในภาพ) ปรับผิวให้เรียบก่อนติดตั้งเสาเข็ม'],
+      ['3  ติดตั้งเสาเข็มสกรูฝั่ง side slope ด้วยรถกดเสาเข็ม', 'รถกดเสาเข็มจอดบนถนนเท่านั้น เหยียดแขนเครนลงมากดเสาเข็มสกรูยาว 3.0 ม. ที่ปลายล่างของลาด แขนมีความยาวคงที่ ไม่ยืดหด ระยะเอื้อมมาจากการหมุนข้อต่อแบบรถเครน ระยะไม่เกิน 3.5 ม. กดทีละต้นห่างกัน 1.00 ม. แล้วเลื่อนรถไปตามแนวถนน (ขนาดรถในแอนิเมชันเป็นรูปทรงสมมติ)'],
+      ['4  ติดตั้งเสาเข็มสกรูฝั่ง back slope ด้วยรถกดเสาเข็ม', 'ย้ายแขนเครนไปทำฝั่ง back slope รถยังอยู่บนถนน หมุนข้อต่อให้แขนข้ามรางระบายน้ำลงไปกดเสาเข็มสกรูยาว 2.0 ม. ห่างกัน 1.00 ม. ระยะเอื้อมไม่เกิน 3.5 ม. แล้วเลื่อนรถไปตามแนวถนน'],
+      ['5  โซนท่อลอด: ติดตั้งเสาเข็มสกรูด้วยเครื่อง hand drive', 'เสาเข็มสกรูยาว 2.0 ม. ที่แนวท่อลอด 3 ต้นอยู่ที่เชิงลาด รถเอื้อมไม่ถึง จึงใช้เครื่องมือ hand drive ที่ควบคุมด้วยคน คนหนึ่งจับหัวสว่านให้อยู่บนหัวเสาเข็ม อีกคนจับท่อนเหล็กไว้ต้านแรงบิดไม่ให้เครื่องหมุนตาม เสาเข็มสกรูจะหมุนตัวเองลงไปในดิน ไม่มีคนหรือเครื่องมือหมุนนอกจากตัวเสาเข็ม เมื่อเสาเข็มครบทุกโซนแล้วจึงเริ่มขุดและเรียงกระสอบ'],
+      ['6  ขุดรับกระสอบใบล่าง และดึงแนวลาดใหม่', 'ขุดดินเฉพาะที่วางกระสอบใบล่างสุดให้นั่งได้ระดับข้างเสาเข็มที่กั้นไว้ แล้วปรับผิวลาดใหม่เป็นเส้นตรงจากหลังกระสอบใบล่างขึ้นไปชนมุม capbeam ตามแบบ A-A ลาดใหม่ชันกว่าลาดเดิมเล็กน้อย'],
+      ['7  วางกระสอบแถวแรกชิดแนวลาด', 'วางกระสอบแถวแรกของโซน shear pin ให้ชิดแนวลาดดิน โดยให้ส่วนบรรจุดินชนลาด และปากกระสอบวางพาดขึ้นไปตามแนวลาด บดอัดกระสอบและปรับผิวให้เรียบ'],
+      ['8  วางต้นไม้ที่รอยต่อระหว่างกระสอบ', 'เมื่อเรียงกระสอบครบทั้งชั้นแล้ว จึงวางต้นกล้าและกอดอกไม้ที่รอยต่อระหว่างกระสอบตามแนวนอน (ทุก 3 ชั้น ห่างประมาณ 0.7 ม.) เติมวัสดุปลูกที่ร่องรอยต่อก่อนวางต้นไม้ ให้รากอยู่ระหว่างกระสอบ ต้นไม้ชี้ออกจากผิวลาด แล้วจึงเรียงกระสอบชั้นถัดไปทับ'],
+      ['9  วางกระสอบใบถัดไปในแถวเดียวกัน', 'วางกระสอบใบถัดไปให้ส่วนบรรจุดินชิดใบก่อนหน้าและทับบริเวณปีกของใบก่อนหน้า ปีกอีกด้านพาดบนกระสอบใบก่อนหน้า'],
+      ['10  ชั้นถัดไปเรียงสับหว่าง', 'เมื่อเริ่มเรียงชั้นถัดไป ให้วางส่วนบรรจุดินของชั้นบนอยู่ระหว่างส่วนบรรจุดินของชั้นล่าง 2 ใบ และปากกระสอบพาดขึ้นตามแนวลาด'],
+      ['11  พับปากและปีกทุกใบเก็บใต้กระสอบ เมื่อเรียงถึงชั้นบนสุด', 'เมื่อเรียงถึงชั้นบนสุดแล้ว ปากกระสอบและปีกของทุกใบ ทั้งชั้นบนและชั้นล่าง ต้องพับกลับเก็บไว้ใต้กระสอบ ไม่ให้โผล่พ้นแนวกำแพง จากนั้นปิดปลายแถวด้วยกระสอบครึ่งใบ เหลือเฉพาะส่วนใส่ดิน'],
+      ['12  ชั้นบนทับชั้นล่างไม่น้อยกว่า 50%', 'การเรียงในแต่ละชั้นควรให้กระสอบชั้นบนทับกระสอบชั้นล่างไม่ต่ำกว่าร้อยละ 50 (ในแบบ เรียงสลับครึ่งใบทุกชั้น) โซน shear pin เรียงเสร็จทั้งแนวแล้ว จึงไปทำโซนท่อลอดในขั้นต่อไป'],
+      ['13  โซนท่อลอด: กระสอบป่านใส่ทรายด้านใน กระสอบมีปีกที่ผิวหน้า', 'เมื่อโซน shear pin เสร็จแล้วจึงมาทำโซนท่อลอด เริ่มจากกระสอบป่านใส่ทรายใบหน้าสุดที่วางนอนบนดิน เรียงเป็นชั้นแนวนอนซ้อนกันขึ้นมาเป็นรูปสามเหลี่ยมจนชนหน้า capbeam เว้นช่องให้ท่อ ค.ส.ล. ที่วางไว้แล้วพาดผ่านโดยปากท่อเปิดโล่ง ผิวหน้าสุดเรียงด้วยกระสอบมีปีกชั้นเดียวกับโซนแรก โดยเริ่มที่ระดับเดียวกับกระสอบป่านใบหน้าสุด']
     ];
     var tNow = 0, playing = false, last = 0;
     var title = document.getElementById('lay-title'), text = document.getElementById('lay-text');
@@ -1965,10 +1986,14 @@ footer{font-size:13px;color:var(--muted);border-top:1px solid var(--line);paddin
     var shownStep = -1;
     function vis(g, on){ if (g) g.visible = on; }
     function applyStage(t){
-      var cut1 = t >= TL[4][0] + 1.2, z2 = t >= TL[11][0] + 0.3;
+      var cut1 = t >= TL[5][0] + 1.2;
       vis(layG.ground_raw1, !cut1); vis(layG.ground_z1, cut1);
-      vis(layG.ground_raw2, !z2); vis(layG.ground_z2, z2);
-      vis(layG.culvert, z2);
+      vis(layG.ground_raw2, false); vis(layG.ground_z2, true);      // the culvert (pipe, manhole, trench) is already built
+      vis(layG.culvert, true);
+      // cleared area (darker brown) sweeps along the road during step 2 and disappears when the slope is re-cut
+      var cf = clamp01((t - TL[1][0]) / (TL[1][1] - TL[1][0]));
+      clearPatch.visible = t >= TL[1][0] && !cut1;
+      CLEARCP.constant = lerp(WY0, 43.2, cf);
     }
     function applyT(){
       applyStage(tNow);
