@@ -143,10 +143,10 @@ footer{font-size:13px;color:var(--muted);border-top:1px solid var(--line);paddin
 
   <section id="laying" aria-labelledby="h-laying">
     <h2 id="h-laying">ขั้นตอนการเรียงกระสอบมีปีก</h2>
-    <p>แอนิเมชันสามมิติจากโมเดลนี้ แสดงช่วง 38–46.5 ม. จากต้นแนว เริ่มจากลาดดินเปล่า ขั้นที่ 1–2 เตรียมลาด ขั้นที่ 3–8 เรียงโซน shear pin ให้เสร็จทั้งแนวก่อน แล้วขั้นที่ 9 จึงไปทำโซนท่อลอด กด “เล่น” เพื่อดูต่อเนื่อง หรือเลือกขั้นตอนเอง ลากเพื่อหมุนดูได้ระหว่างเล่น</p>
+    <p>แอนิเมชันสามมิติจากโมเดลนี้ แสดงช่วง 35–46.5 ม. จากต้นแนว เริ่มจากลาดดินเปล่า ขั้นที่ 2–3 ติดตั้งเสาเข็มสกรูด้วยรถกดเสาเข็มบนถนน ขั้นที่ 4 ขุดรับกระสอบใบล่างและดึงแนวลาดใหม่ ขั้นที่ 5–10 เรียงโซน shear pin ให้เสร็จทั้งแนวก่อน แล้วขั้นที่ 11–12 จึงไปทำโซนท่อลอด (เสาเข็มด้วย hand drive แล้วเรียงกระสอบ) กด “เล่น” เพื่อดูต่อเนื่อง หรือเลือกขั้นตอนเอง ลากเพื่อหมุนดูได้ระหว่างเล่น</p>
     <div class="tabs" id="lay-steps" role="group" aria-label="เลือกขั้นตอน">
       <button aria-pressed="true">1</button><button aria-pressed="false">2</button><button aria-pressed="false">3</button>
-      <button aria-pressed="false">4</button><button aria-pressed="false">5</button><button aria-pressed="false">6</button><button aria-pressed="false">7</button><button aria-pressed="false">8</button><button aria-pressed="false">9</button>
+      <button aria-pressed="false">4</button><button aria-pressed="false">5</button><button aria-pressed="false">6</button><button aria-pressed="false">7</button><button aria-pressed="false">8</button><button aria-pressed="false">9</button><button aria-pressed="false">10</button><button aria-pressed="false">11</button><button aria-pressed="false">12</button>
     </div>
     <div class="stage" id="lay-stage" style="height:min(56vh,480px)"></div>
     <div class="toolbar">
@@ -1673,14 +1673,19 @@ footer{font-size:13px;color:var(--muted);border-top:1px solid var(--line);paddin
   loading.hidden = true;
 
   // =========================================================================
-  // laying-steps animation: its own scene (same geometry), only the pipe-mouth stretch, courses appear one by one
+  // laying-steps animation: its own scene (same geometry), the stretch y = 35 - 46.5 m.
+  // bare slope -> screw piles (truck-mounted press on the road, hand drive at the culvert) -> notch + new slope line ->
+  // shear-pin zone courses -> culvert zone
   // =========================================================================
   var layHost = document.getElementById('lay-stage');
   var layOK = false, layRenderer, layScene, layCam, layCtl, animMeshes = [], layVisible = false;
-  var WY0 = 38.0, WY1 = 46.5, ZSPLIT = 43.5, ZEND = 46.1, NCOURSE = 14;
+  var WY0 = 35.0, WY1 = 46.5, ZSPLIT = 43.5, ZEND = 46.1, NCOURSE = 14;
+  var LAYCP = [new THREE.Plane(new THREE.Vector3(0, 0, -1), -WY0), new THREE.Plane(new THREE.Vector3(0, 0, 1), WY1)];
+  var pileMeshes = [], pileJobs = {}, jobList = [];
+  var TL = [[0, 3, 0, 0], [3, 15, 0, 0], [15, 29, 0, 0], [29, 34, 0, 0], [34, 38, 0, 1], [38, 42, 1, 2], [42, 46, 2, 3], [46, 54, 3, 7], [54, 66, 7, NCOURSE], [66, 69, NCOURSE, NCOURSE], [69, 83, NCOURSE, NCOURSE], [83, 98, NCOURSE, 2 * NCOURSE]];
+  var TT = 98;
   try {
     layRenderer = newRenderer(layHost);
-    layRenderer.clippingPlanes = [new THREE.Plane(new THREE.Vector3(0, 0, -1), -WY0), new THREE.Plane(new THREE.Vector3(0, 0, 1), WY1)];
     layScene = new THREE.Scene(); lights(layScene);
     layCam = new THREE.PerspectiveCamera(35, 1, 0.05, 800);
     layCtl = makeControls(layCam, layRenderer.domElement);
@@ -1699,37 +1704,68 @@ footer{font-size:13px;color:var(--muted);border-top:1px solid var(--line);paddin
     GC.forEach(function(gc){
       var grp = gc.g.grp;
       if (grp.indexOf('mat_') === 0) return;
-      if (!ANIM[grp]){
-        layGroup(grp).add(makeInst(gc, gc.mats, gc.g.n, []));
+      if (grp === 'piles'){
+        // piles: every instance in the window becomes a job (truck side slope / truck back slope / hand drive at the culvert)
+        var items = [];
+        for (var k = 0; k < gc.g.n; k++){
+          var y = gc.mats[k * 16 + 13] * 0.0254;
+          if (y >= WY0 && y <= WY1) items.push(k);
+        }
+        if (!items.length) return;
+        var mats = new Float32Array(items.length * 16), jobs = new Int32Array(items.length);
+        var L = gc.geo.boundingBox.max.z * 0.0254;
+        items.forEach(function(kk, j){
+          for (var q = 0; q < 16; q++) mats[j * 16 + q] = gc.mats[kk * 16 + q];
+          var x = mats[j * 16 + 12] * 0.0254, yy = mats[j * 16 + 13] * 0.0254, zz = mats[j * 16 + 14] * 0.0254;
+          var key = x.toFixed(2) + '|' + yy.toFixed(2);
+          if (!pileJobs[key]){
+            var kind = x > 8 ? 'back' : (yy >= 43.4 ? 'hand' : 'toe');
+            pileJobs[key] = {kind: kind, x: x, y: yy, len: Math.max(1.5, Math.round(L * 2) / 2), gz: zz, ts: 0, dur: 1, id: jobList.length};
+            jobList.push(pileJobs[key]);
+          }
+          jobs[j] = pileJobs[key].id;
+        });
+        var im = makeInst(gc, mats, items.length, LAYCP);
+        im.userData.base = new Float32Array(mats); im.userData.jobs = jobs;
+        pileMeshes.push(im); layRoot.add(im);
         return;
       }
-      var items = [];
-      for (var k = 0; k < gc.g.n; k++){
-        var y = gc.mats[k * 16 + 13] * 0.0254, z = gc.mats[k * 16 + 14] * 0.0254;
-        if (y < WY0 || y > WY1) continue;
-        var z2 = y >= 43.325;   // middle of the 0.35 m joint (block bags start at 43.5 plus a small jitter)
-        var frac = z2 ? (y - ZSPLIT) / (ZEND - ZSPLIT) : (y - WY0) / (43.15 - WY0);
-        items.push({k: k, key: (z2 ? NCOURSE : 0) + keyOf(grp, z, z2) + 0.98 * Math.max(0, Math.min(1, frac))});
+      if (!ANIM[grp]){
+        layGroup(grp).add(makeInst(gc, gc.mats, gc.g.n, LAYCP));
+        return;
       }
-      if (!items.length) return;
-      items.sort(function(a, b){ return a.key - b.key; });
-      var mats = new Float32Array(items.length * 16), keys = new Float32Array(items.length);
-      items.forEach(function(it, j){
-        for (var q = 0; q < 16; q++) mats[j * 16 + q] = gc.mats[it.k * 16 + q];
+      var items2 = [];
+      for (var k2 = 0; k2 < gc.g.n; k2++){
+        var y2 = gc.mats[k2 * 16 + 13] * 0.0254, z2v = gc.mats[k2 * 16 + 14] * 0.0254;
+        if (y2 < WY0 || y2 > WY1) continue;
+        var zone2 = y2 >= 43.325;   // middle of the 0.35 m joint (block bags start at 43.5 plus a small jitter)
+        var frac = zone2 ? (y2 - ZSPLIT) / (ZEND - ZSPLIT) : (y2 - 38.0) / (43.15 - 38.0);
+        items2.push({k: k2, key: (zone2 ? NCOURSE : 0) + keyOf(grp, z2v, zone2) + 0.98 * Math.max(0, Math.min(1, frac))});
+      }
+      if (!items2.length) return;
+      items2.sort(function(a, b){ return a.key - b.key; });
+      var mats2 = new Float32Array(items2.length * 16), keys = new Float32Array(items2.length);
+      items2.forEach(function(it, j){
+        for (var q = 0; q < 16; q++) mats2[j * 16 + q] = gc.mats[it.k * 16 + q];
         keys[j] = it.key;
       });
-      var im = makeInst(gc, mats, items.length, []);
-      im.userData.keys = keys;
-      animMeshes.push(im);
-      layRoot.add(im);
+      var im2 = makeInst(gc, mats2, items2.length, LAYCP);
+      im2.userData.keys = keys;
+      animMeshes.push(im2);
+      layRoot.add(im2);
     });
     layScene.add(layRoot);
     layOK = true;
-  } catch(e){ layOK = false; layHost.textContent = 'แอนิเมชันนี้ต้องใช้ WebGL'; }
+  } catch(e){ layOK = false; layHost.textContent = 'แอนิเมชันนี้ต้องใช้ WebGL (' + e.message + ')'; }
 
   if (layOK){
-    var LB = {min: [-1.0, WY0 + 0.5, 0.0], max: [5.0, WY1 - 0.3, 2.4]};
-    var LAYDIR = [-0.85, 0.5, 0.75];
+    var CAM = {
+      wide:    {b: {min: [-1.5, 34.5, -0.5], max: [13.5, 46.5, 6.0]}, dir: [-0.85, 0.5, 0.75]},
+      slope:   {b: {min: [-1.0, 38.0, 0.0], max: [5.0, 46.2, 2.4]}, dir: [-0.85, 0.5, 0.75]},
+      culvert: {b: {min: [-1.5, 41.0, -0.2], max: [4.5, 47.5, 2.6]}, dir: [-0.8, 0.55, 0.7]}
+    };
+    var STEPCAM = ['slope', 'wide', 'wide', 'slope', 'slope', 'slope', 'slope', 'slope', 'slope', 'slope', 'culvert', 'slope'];
+    var curCam = '';
     function resizeLay(){
       var w = layHost.clientWidth, h = layHost.clientHeight;
       if (!w || !h) return;
@@ -1739,23 +1775,157 @@ footer{font-size:13px;color:var(--muted);border-top:1px solid var(--line);paddin
     window.addEventListener('resize', resizeLay);
     if (window.ResizeObserver) new ResizeObserver(resizeLay).observe(layHost);
     resizeLay();
-    fitCam(layCam, layCtl, LB, LAYDIR, 35);
     if (window.IntersectionObserver) new IntersectionObserver(function(es){ layVisible = es[0].isIntersecting; }).observe(layHost); else layVisible = true;
+    function setCam(mode){ curCam = mode; fitCam(layCam, layCtl, CAM[mode].b, CAM[mode].dir, 35); }
+
+    // ---- schedule the pile jobs ----
+    var toeJobs = jobList.filter(function(j){ return j.kind === 'toe'; }).sort(function(a, b){ return a.y - b.y; });
+    var backJobs = jobList.filter(function(j){ return j.kind === 'back'; }).sort(function(a, b){ return b.y - a.y; });
+    var handJobs = jobList.filter(function(j){ return j.kind === 'hand'; }).sort(function(a, b){ return a.y - b.y; });
+    toeJobs.forEach(function(j, i){ j.ts = TL[1][0] + 1.4 + i * 1.1; j.dur = 0.85; });
+    backJobs.forEach(function(j, i){ j.ts = TL[2][0] + 3.4 + i * 1.1; j.dur = 0.85; });
+    handJobs.forEach(function(j, i){ j.ts = TL[10][0] + 1.5 + i * 4.2; j.dur = 3.0; });
+
+    // ---- machines (metres, SketchUp axes: x across the road, y along the road, z up) ----
+    var toolRoot = new THREE.Group(); toolRoot.rotation.x = -Math.PI / 2; layScene.add(toolRoot);
+    function lm(c){ return new THREE.MeshLambertMaterial({color: c}); }
+    var M_ORANGE = lm(0xe6741b), M_BLUE = lm(0x1f4aa8), M_DARK = lm(0x2a2a2e), M_GREY = lm(0x9ea4ab), M_RED = lm(0xc8312b), M_SKIN = lm(0xc99a72), M_WHITE = lm(0xf2f2f2), M_SHIRT = lm(0x2d56c4), M_PANTS = lm(0x23398a);
+    function box(w, d, h, m, parent, x, y, z){ var me = new THREE.Mesh(new THREE.BoxGeometry(w, d, h), m); me.position.set(x, y, z); (parent || toolRoot).add(me); return me; }
+    function cyl(r, h, m, parent, x, y, z, axis){
+      var me = new THREE.Mesh(new THREE.CylinderGeometry(r, r, h, 16), m);
+      if (axis === 'z') me.rotation.x = Math.PI / 2;      // cylinder default axis is y; make it vertical in these axes (z up)
+      else if (axis === 'x') me.rotation.z = Math.PI / 2;
+      me.position.set(x, y, z); (parent || toolRoot).add(me); return me;
+    }
+    // truck (origin: centre of the truck on the road surface, front toward +y)
+    var truck = new THREE.Group(); toolRoot.add(truck); truck.visible = false;
+    box(2.2, 6.4, 0.35, M_DARK, truck, 0, 0, 0.75);                    // chassis
+    box(2.2, 1.7, 1.7, M_BLUE, truck, 0, 2.5, 1.85);                   // cab
+    box(2.0, 0.1, 0.7, M_DARK, truck, 0, 3.38, 1.9);                   // windscreen
+    box(2.2, 3.6, 0.25, M_ORANGE, truck, 0, -0.9, 1.05);               // bed
+    [[-1.1, 2.4], [1.1, 2.4], [-1.1, -1.9], [1.1, -1.9]].forEach(function(w){ cyl(0.5, 0.35, M_DARK, truck, w[0], w[1], 0.5, 'x'); });
+    var craneBase = cyl(0.42, 0.9, M_ORANGE, truck, 0, 0, 1.6, 'z');   // moved per frame
+    var legL = box(0.25, 0.25, 0.8, M_RED, truck, -1.5, -2.0, 0.5), legR = box(0.25, 0.25, 0.8, M_RED, truck, 1.5, -2.0, 0.5);
+    var column = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.5, 1.0), M_ORANGE); toolRoot.add(column);
+    var boom = new THREE.Mesh(new THREE.BoxGeometry(1, 0.32, 0.32), M_ORANGE); toolRoot.add(boom);
+    var rotary = cyl(0.24, 0.9, M_BLUE, toolRoot, 0, 0, 0, 'z');
+    column.visible = boom.visible = rotary.visible = false;
+    var truckPile = null;
+    // workers (hand drive)
+    function worker(){
+      var g = new THREE.Group();
+      box(0.2, 0.14, 0.85, M_PANTS, g, -0.1, 0, 0.43); box(0.2, 0.14, 0.85, M_PANTS, g, 0.1, 0, 0.43);
+      box(0.42, 0.24, 0.6, M_SHIRT, g, 0, 0, 1.15);
+      var hd = new THREE.Mesh(new THREE.SphereGeometry(0.12, 12, 10), M_SKIN); hd.position.set(0, 0, 1.58); g.add(hd);
+      box(0.1, 0.1, 0.55, M_SHIRT, g, -0.28, 0, 1.12); box(0.1, 0.1, 0.55, M_SHIRT, g, 0.28, 0, 1.12);
+      return g;
+    }
+    var hand = new THREE.Group(); toolRoot.add(hand); hand.visible = false;
+    var w1 = worker(), w2 = worker(); hand.add(w1); hand.add(w2);
+    var drive = new THREE.Group(); hand.add(drive);
+    cyl(0.13, 0.32, M_GREY, drive, 0, 0, 0.2, 'z'); cyl(0.1, 0.22, M_RED, drive, 0, 0, 0.47, 'z'); box(0.12, 0.2, 0.2, M_DARK, drive, 0, 0, 0.7);
+    var bar = box(1.7, 0.07, 0.07, M_GREY, drive, 0.85, 0, 0.12);
+
+    function lerp(a, b, f){ return a + (b - a) * f; }
+    function clamp01(v){ return Math.max(0, Math.min(1, v)); }
+    var ROAD_Z = 2.16;
+    // keyframed y of the truck / workers: stays at a job during its slot and moves between jobs
+    function seqY(jobs, t, y0, tStart){
+      var keys = [[tStart, y0]];
+      jobs.forEach(function(j){ keys.push([j.ts - 0.45, j.y]); keys.push([j.ts + j.dur + 0.1, j.y]); });
+      if (t <= keys[0][0]) return keys[0][1];
+      for (var i = 1; i < keys.length; i++){
+        if (t <= keys[i][0]){ var a = keys[i - 1], b = keys[i]; return lerp(a[1], b[1], clamp01((t - a[0]) / Math.max(1e-6, b[0] - a[0]))); }
+      }
+      return keys[keys.length - 1][1];
+    }
+    function jobLift(j, t){ return t < j.ts ? 0 : j.len * (1 - clamp01((t - j.ts) / j.dur)); }
+    function activeJob(jobs, t){ for (var i = 0; i < jobs.length; i++){ if (t >= jobs[i].ts - 0.45 && t <= jobs[i].ts + jobs[i].dur + 0.1) return jobs[i]; } return null; }
+    function placeBeam(p0, p1){
+      var d = new THREE.Vector3(p1[0] - p0[0], p1[1] - p0[1], p1[2] - p0[2]), len = d.length();
+      boom.position.set((p0[0] + p1[0]) / 2, (p0[1] + p1[1]) / 2, (p0[2] + p1[2]) / 2);
+      boom.scale.set(len, 1, 1);
+      boom.quaternion.setFromUnitVectors(new THREE.Vector3(1, 0, 0), d.normalize());
+    }
+    function updateTruck(t){
+      var side = t >= TL[1][0] && t <= TL[1][1] + 0.5, back = t >= TL[2][0] && t <= TL[2][1] + 0.5;
+      var on = side || back;
+      truck.visible = column.visible = boom.visible = rotary.visible = on;
+      if (!on) return;
+      var jobs, xt, xp, y, xh0;
+      if (side){
+        jobs = toeJobs; xt = 4.8; xp = 3.45; y = seqY(jobs, t, jobs[0].y - 3.0, TL[1][0]);
+      } else {
+        jobs = backJobs;
+        var f = clamp01((t - TL[2][0]) / 1.8);
+        xt = lerp(4.8, 7.8, f); xp = lerp(3.45, 8.85, f);
+        y = seqY(jobs, t, toeJobs[toeJobs.length - 1].y, TL[2][0] + 1.8);
+      }
+      truck.position.set(xt, y, ROAD_Z);
+      var yb = y - 0.4;
+      // crane base follows the pivot (moved to the working side of the truck bed)
+      craneBase.position.set(xp - xt, yb - y, 1.6);
+      var legx = side ? -1.5 : 1.5; legL.position.set(legx, -2.0, 0.5); legR.position.set(legx, 1.2, 0.5);
+      column.position.set(xp, yb, ROAD_Z + 2.31); column.scale.set(1, 1, 1.9);
+      var j = activeJob(jobs, t);
+      var done = jobs.filter(function(q){ return q.ts + q.dur < t; }).length;
+      var jj = j || jobs[Math.min(jobs.length - 1, done)];
+      var gz = jj.gz + jj.len;                       // ground level at the pile (head of the finished pile)
+      var lift = j ? jobLift(j, t) : 0.8;
+      var xh = jj.x;
+      rotary.position.set(xh, y, gz + lift + 0.5);
+      placeBeam([xp, yb, ROAD_Z + 3.26], [xh, y, gz + lift + 1.0]);
+    }
+    function updatePiles(t){
+      var m4 = new THREE.Matrix4(), tr = new THREE.Matrix4(), rz = new THREE.Matrix4(), out = new THREE.Matrix4(), zero = new THREE.Matrix4().makeScale(0, 0, 0);
+      pileMeshes.forEach(function(im){
+        var base = im.userData.base, jobs = im.userData.jobs, n = im.userData.n;
+        for (var i = 0; i < n; i++){
+          var j = jobList[jobs[i]];
+          if (t < j.ts){ im.setMatrixAt(i, zero); continue; }
+          var f = clamp01((t - j.ts) / j.dur), lift = j.len * (1 - f) * 39.3701;
+          m4.fromArray(base, i * 16);
+          tr.makeTranslation(0, 0, lift);
+          rz.makeRotationZ(f < 1 ? f * 12 * Math.PI : 0);
+          out.copy(tr).multiply(m4).multiply(rz);
+          im.setMatrixAt(i, out);
+        }
+        im.instanceMatrix.needsUpdate = true;
+      });
+    }
+    function updateHand(t){
+      var on = t >= TL[10][0] && t <= TL[10][1] + 0.3;
+      hand.visible = on;
+      if (!on || !handJobs.length) return;
+      var y = seqY(handJobs, t, handJobs[0].y - 1.5, TL[10][0]);
+      var j = activeJob(handJobs, t) || handJobs[Math.min(handJobs.length - 1, Math.max(0, handJobs.filter(function(q){ return q.ts < t; }).length - 1))];
+      var lift = jobLift(j, t), act = t >= j.ts - 0.2 && t <= j.ts + j.dur;
+      var ang = act ? clamp01((t - j.ts) / j.dur) * 12 * Math.PI * 0.5 : 0;
+      var gl = j.gz + j.len;                       // ground level at the pile
+      drive.position.set(j.x, y, gl + lift);
+      drive.visible = true;
+      bar.position.set(0.85 * Math.cos(ang), 0.85 * Math.sin(ang), 0.12); bar.rotation.z = ang;
+      w1.position.set(j.x + 1.5 * Math.cos(ang), y + 1.5 * Math.sin(ang), 0);   // holds the end of the bar
+      w1.rotation.z = ang + Math.PI / 2;
+      w2.position.set(j.x + 0.55, y - 0.55, 0);                                  // steadies the machine
+      w2.rotation.z = Math.PI / 2 + 0.6;
+      w1.position.z = gl; w2.position.z = gl;
+    }
 
     var STEPS = [
       ['1  ลาดดินเดิมก่อนเริ่มงาน', 'ลาดดินด้านข้างถนนยังเป็นดินเปล่า ยังไม่มีกระสอบและเสาเข็ม capbeam กับ shear pin อยู่ที่ขอบถนนแล้ว ผิวลาดเดิมประมาณ 34° เป็นจุดเริ่มต้นของการเรียงกระสอบ'],
-      ['2  ติดตั้งเสาเข็มสกรู ขุดรับกระสอบใบล่าง และดึงแนวลาดใหม่', 'ติดตั้งเสาเข็มสกรูยาว 3.0 ม. ที่ปลายล่างของลาดเพื่อกั้นกระสอบ ขุดดินเฉพาะที่วางกระสอบใบล่างสุดให้นั่งได้ระดับ แล้วปรับผิวลาดใหม่เป็นเส้นตรงจากหลังกระสอบใบล่างขึ้นไปชนมุม capbeam ตามแบบ A-A ลาดใหม่ชันกว่าลาดเดิมเล็กน้อย'],
-      ['3  วางกระสอบแถวแรกชิดแนวลาด', 'วางกระสอบแถวแรกของโซน shear pin ให้ชิดแนวลาดดิน โดยให้ส่วนบรรจุดินชนลาด และปากกระสอบวางพาดขึ้นไปตามแนวลาด บดอัดกระสอบและปรับผิวให้เรียบ'],
-      ['4  ขุดร่อง ใส่ปุ๋ย Bio char และวางท่อนพันธุ์', 'ขุดร่องดินเดิมประมาณ 10-20 ซม. เติมปุ๋ย Bio char หรือวัสดุปลูก เจาะบริเวณปากกระสอบเล็กๆ แล้ววางท่อนพันธุ์ปักชำนอนราบ (แท่งสีน้ำตาลปลายเขียวในโมเดล ห่างกัน 0.75 ม.) ให้ปลายด้านหนึ่งฝังในร่องและปลายอีกด้านโผล่ออกมา'],
-      ['5  วางกระสอบใบถัดไปในแถวเดียวกัน', 'วางกระสอบใบถัดไปให้ส่วนบรรจุดินชิดใบก่อนหน้าและทับบริเวณปีกของใบก่อนหน้า ปีกอีกด้านพาดบนกระสอบใบก่อนหน้า แล้วใส่ท่อนพันธุ์ที่ปากกระสอบทุกใบ'],
-      ['6  ชั้นถัดไปเรียงสับหว่าง', 'เมื่อเริ่มเรียงชั้นถัดไป ให้วางส่วนบรรจุดินของชั้นบนอยู่ระหว่างส่วนบรรจุดินของชั้นล่าง 2 ใบ และปากกระสอบพาดขึ้นตามแนวลาด'],
-      ['7  พับปากและปีกทุกใบเก็บใต้กระสอบ เมื่อเรียงถึงชั้นบนสุด', 'เมื่อเรียงถึงชั้นบนสุดแล้ว ปากกระสอบและปีกของทุกใบ ทั้งชั้นบนและชั้นล่าง ต้องพับกลับเก็บไว้ใต้กระสอบ ไม่ให้โผล่พ้นแนวกำแพง จากนั้นปิดปลายแถวด้วยกระสอบครึ่งใบ เหลือเฉพาะส่วนใส่ดิน'],
-      ['8  ชั้นบนทับชั้นล่างไม่น้อยกว่า 50%', 'การเรียงในแต่ละชั้นควรให้กระสอบชั้นบนทับกระสอบชั้นล่างไม่ต่ำกว่าร้อยละ 50 (ในแบบ เรียงสลับครึ่งใบทุกชั้น) โซน shear pin เรียงเสร็จทั้งแนวแล้ว จึงไปทำโซนท่อลอดในขั้นต่อไป'],
-      ['9  โซนท่อลอด: กระสอบป่านใส่ทรายด้านใน กระสอบมีปีกที่ผิวหน้า', 'ขุดดินบริเวณท่อลอดและวางท่อ ค.ส.ล. ก่อน จากนั้นเริ่มจากกระสอบป่านใส่ทรายใบหน้าสุดที่วางนอนบนดิน เรียงเป็นชั้นแนวนอนซ้อนกันขึ้นมาเป็นรูปสามเหลี่ยมจนชนหน้า capbeam เว้นช่องให้ท่อพาดผ่านโดยปากท่อเปิดโล่ง ผิวหน้าสุดเรียงด้วยกระสอบมีปีกชั้นเดียวกับโซนแรก']
+      ['2  ติดตั้งเสาเข็มสกรูฝั่ง side slope ด้วยรถกดเสาเข็ม', 'รถกดเสาเข็มจอดบนถนนเท่านั้น ยื่นบูมลงมากดเสาเข็มสกรูยาว 3.0 ม. ที่ปลายล่างของลาด ระยะบูมไม่เกิน 3.5 ม. กดทีละต้นห่างกัน 1.00 ม. แล้วเลื่อนรถไปตามแนวถนน (ขนาดรถในแอนิเมชันเป็นรูปทรงสมมติ)'],
+      ['3  ติดตั้งเสาเข็มสกรูฝั่ง back slope ด้วยรถกดเสาเข็ม', 'ย้ายบูมไปทำฝั่ง back slope รถยังอยู่บนถนน ยื่นบูมข้ามรางระบายน้ำลงไปกดเสาเข็มสกรูยาว 2.0 ม. ห่างกัน 1.00 ม. ระยะบูมไม่เกิน 3.5 ม. แล้วเลื่อนรถไปตามแนวถนน'],
+      ['4  ขุดรับกระสอบใบล่าง และดึงแนวลาดใหม่', 'ขุดดินเฉพาะที่วางกระสอบใบล่างสุดให้นั่งได้ระดับข้างเสาเข็มที่กั้นไว้ แล้วปรับผิวลาดใหม่เป็นเส้นตรงจากหลังกระสอบใบล่างขึ้นไปชนมุม capbeam ตามแบบ A-A ลาดใหม่ชันกว่าลาดเดิมเล็กน้อย'],
+      ['5  วางกระสอบแถวแรกชิดแนวลาด', 'วางกระสอบแถวแรกของโซน shear pin ให้ชิดแนวลาดดิน โดยให้ส่วนบรรจุดินชนลาด และปากกระสอบวางพาดขึ้นไปตามแนวลาด บดอัดกระสอบและปรับผิวให้เรียบ'],
+      ['6  ขุดร่อง ใส่ปุ๋ย Bio char และวางท่อนพันธุ์', 'ขุดร่องดินเดิมประมาณ 10-20 ซม. เติมปุ๋ย Bio char หรือวัสดุปลูก เจาะบริเวณปากกระสอบเล็กๆ แล้ววางท่อนพันธุ์ปักชำนอนราบ (แท่งสีน้ำตาลปลายเขียวในโมเดล ห่างกัน 0.75 ม.) ให้ปลายด้านหนึ่งฝังในร่องและปลายอีกด้านโผล่ออกมา'],
+      ['7  วางกระสอบใบถัดไปในแถวเดียวกัน', 'วางกระสอบใบถัดไปให้ส่วนบรรจุดินชิดใบก่อนหน้าและทับบริเวณปีกของใบก่อนหน้า ปีกอีกด้านพาดบนกระสอบใบก่อนหน้า แล้วใส่ท่อนพันธุ์ที่ปากกระสอบทุกใบ'],
+      ['8  ชั้นถัดไปเรียงสับหว่าง', 'เมื่อเริ่มเรียงชั้นถัดไป ให้วางส่วนบรรจุดินของชั้นบนอยู่ระหว่างส่วนบรรจุดินของชั้นล่าง 2 ใบ และปากกระสอบพาดขึ้นตามแนวลาด'],
+      ['9  พับปากและปีกทุกใบเก็บใต้กระสอบ เมื่อเรียงถึงชั้นบนสุด', 'เมื่อเรียงถึงชั้นบนสุดแล้ว ปากกระสอบและปีกของทุกใบ ทั้งชั้นบนและชั้นล่าง ต้องพับกลับเก็บไว้ใต้กระสอบ ไม่ให้โผล่พ้นแนวกำแพง จากนั้นปิดปลายแถวด้วยกระสอบครึ่งใบ เหลือเฉพาะส่วนใส่ดิน'],
+      ['10  ชั้นบนทับชั้นล่างไม่น้อยกว่า 50%', 'การเรียงในแต่ละชั้นควรให้กระสอบชั้นบนทับกระสอบชั้นล่างไม่ต่ำกว่าร้อยละ 50 (ในแบบ เรียงสลับครึ่งใบทุกชั้น) โซน shear pin เรียงเสร็จทั้งแนวแล้ว จึงไปทำโซนท่อลอดในขั้นต่อไป'],
+      ['11  โซนท่อลอด: ติดตั้งเสาเข็มสกรูด้วยเครื่อง hand drive', 'เสาเข็มสกรูยาว 2.0 ม. ที่แนวท่อลอด 3 ต้นอยู่ที่เชิงลาด รถเอื้อมไม่ถึง จึงใช้เครื่องมือ hand drive ที่ควบคุมด้วยคน ลงไปหมุนกดเสาเข็มตามภาพถ่าย คนหนึ่งจับคานกันเครื่องหมุน อีกคนคุมเครื่อง แล้วขุดดินวางท่อ ค.ส.ล.'],
+      ['12  โซนท่อลอด: กระสอบป่านใส่ทรายด้านใน กระสอบมีปีกที่ผิวหน้า', 'เริ่มจากกระสอบป่านใส่ทรายใบหน้าสุดที่วางนอนบนดิน เรียงเป็นชั้นแนวนอนซ้อนกันขึ้นมาเป็นรูปสามเหลี่ยมจนชนหน้า capbeam เว้นช่องให้ท่อพาดผ่านโดยปากท่อเปิดโล่ง ผิวหน้าสุดเรียงด้วยกระสอบมีปีกชั้นเดียวกับโซนแรก โดยเริ่มที่ระดับเดียวกับกระสอบป่านใบหน้าสุด']
     ];
-    // timeline: [t start, t end, P start, P end] per step, P in course units (zone 1 = 0..NCOURSE, zone 2 = NCOURSE..2*NCOURSE)
-    var TL = [[0, 3, 0, 0], [3, 10, 0, 0], [10, 14, 0, 1], [14, 18, 1, 2], [18, 22, 2, 3], [22, 30, 3, 7], [30, 42, 7, NCOURSE], [42, 45, NCOURSE, NCOURSE], [45, 60, NCOURSE, 2 * NCOURSE]];
-    var TT = 60;
     var tNow = 0, playing = false, last = 0;
     var title = document.getElementById('lay-title'), text = document.getElementById('lay-text');
     var bPlay = document.getElementById('lay-play'), bPrev = document.getElementById('lay-prev'), bNext = document.getElementById('lay-next');
@@ -1763,27 +1933,28 @@ footer{font-size:13px;color:var(--muted);border-top:1px solid var(--line);paddin
     function stepAt(t){ for (var s = 0; s < TL.length; s++){ if (t <= TL[s][1] + 1e-6) return s; } return TL.length - 1; }
     function progressAt(t){
       var s = stepAt(t), r = TL[s];
-      var f = r[1] > r[0] ? Math.max(0, Math.min(1, (t - r[0]) / (r[1] - r[0]))) : 1;
+      var f = r[1] > r[0] ? clamp01((t - r[0]) / (r[1] - r[0])) : 1;
       return r[2] + (r[3] - r[2]) * f;
     }
     function upper(keys, P){ var lo = 0, hi = keys.length; while (lo < hi){ var m = (lo + hi) >> 1; if (keys[m] < P) lo = m + 1; else hi = m; } return lo; }
     var shownStep = -1;
     function vis(g, on){ if (g) g.visible = on; }
     function applyStage(t){
-      var piles = t >= TL[1][0] + 1.0, cut1 = t >= TL[1][0] + 4.5, z2 = t >= TL[8][0];
-      vis(layG.piles, piles);
+      var cut1 = t >= TL[3][0] + 1.2, z2 = t >= TL[10][0] + 0.5;
       vis(layG.ground_raw1, !cut1); vis(layG.ground_z1, cut1);
       vis(layG.ground_raw2, !z2); vis(layG.ground_z2, z2);
       vis(layG.culvert, z2);
     }
     function applyT(){
       applyStage(tNow);
+      updateTruck(tNow); updatePiles(tNow); updateHand(tNow);
       var P = progressAt(tNow);
       animMeshes.forEach(function(im){ im.count = upper(im.userData.keys, P); });
       var s = stepAt(tNow);
       if (s !== shownStep){
         shownStep = s; title.textContent = STEPS[s][0]; text.textContent = STEPS[s][1];
         btns.forEach(function(b, k){ b.setAttribute('aria-pressed', String(k === s)); });
+        if (STEPCAM[s] !== curCam) setCam(STEPCAM[s]);
       }
     }
     function setT(t){ tNow = Math.max(0, Math.min(TT, t)); applyT(); }
@@ -1795,6 +1966,7 @@ footer{font-size:13px;color:var(--muted);border-top:1px solid var(--line);paddin
     bNext.addEventListener('click', function(){ toStepEnd(Math.min(TL.length - 1, stepAt(tNow) + 1)); });
     bPrev.addEventListener('click', function(){ var s = stepAt(tNow); stop(); if (tNow > TL[s][0] + 0.5) setT(TL[s][0]); else if (s > 0) setT(TL[s - 1][0]); else setT(0); });
     layRenderer.domElement.addEventListener('pointerdown', function(){ layCtl.autoRotate = false; });
+    setCam('slope');
     setT(0);
     window.__layTick = function(now){
       if (playing){
