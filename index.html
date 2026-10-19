@@ -81,6 +81,18 @@ a.sheet img{display:block;width:100%;height:auto;border-radius:6px;background:#f
 a.sheet span{font-size:13.5px;line-height:1.45;padding:2px 4px 4px}
 a.sheet small{display:block;color:var(--muted);font-size:12px;margin-top:2px}
 a.pdfbtn{display:inline-flex;align-items:center;min-height:44px;padding:6px 18px;border-radius:22px;background:var(--accent);color:var(--accent-fg);text-decoration:none;font-size:15px}
+ol.steps{padding-left:22px;margin:0 0 12px}ol.steps li{margin-bottom:6px}
+code{font-family:ui-monospace,Consolas,monospace;font-size:.92em;background:var(--soft);padding:1px 6px;border-radius:4px}
+.calc{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:16px;margin:12px 0}
+.calc .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px 18px}
+.calc label{display:flex;flex-direction:column;gap:4px;font-size:14px}
+.calc label small{color:var(--muted);font-size:12.5px}
+.calc input{font:inherit;font-size:16px;min-height:44px;padding:6px 10px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--fg);width:100%}
+.calc .result{margin-top:16px;display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px}
+.calc .result div{background:var(--soft);border-radius:8px;padding:10px 12px}
+.calc .result b{display:block;font-size:24px;font-variant-numeric:tabular-nums}
+.calc .result span{font-size:13px;color:var(--muted)}
+.calc button{margin-top:12px;min-height:44px;padding:6px 16px;border:1px solid var(--line);border-radius:8px;background:var(--surface);cursor:pointer}
 footer{font-size:13px;color:var(--muted);border-top:1px solid var(--line);padding-top:14px}
 </style>
 
@@ -93,7 +105,7 @@ footer{font-size:13px;color:var(--muted);border-top:1px solid var(--line);paddin
       <a href="#model">โมเดล 3 มิติ</a>
       <a href="#laying">ขั้นตอนการก่อสร้าง</a>
       <a href="#drawings">แบบก่อสร้าง</a>
-      <a href="#qty">ปริมาณวัสดุ</a>
+      <a href="#carbon">คาร์บอน</a>
       <a href="#spec">ข้อมูลแบบ</a>
     </nav>
   </header>
@@ -186,20 +198,40 @@ footer{font-size:13px;color:var(--muted);border-top:1px solid var(--line);paddin
     <p class="hint">แตะที่แผ่นแบบเพื่อเปิดไฟล์ PDF ที่หน้านั้น แบบชุดนี้อยู่ระหว่างปรับแก้ แผ่นที่ 6 ยังมีหัวข้อรายละเอียดเสาเข็มเคซองจากร่างเดิมอยู่ ซึ่งไม่ตรงกับโมเดลที่ใช้ shear pin และ screw pile</p>
   </section>
 
-  <section id="qty" aria-labelledby="h-qty">
-    <h2 id="h-qty">ปริมาณวัสดุ</h2>
-    <p>ปริมาณที่นับจากโมเดลนี้ ตำแหน่งและจำนวนเสาเข็มอ่านจากผังบริเวณก่อสร้าง แผ่นที่ 4/8</p>
-    <div class="qty">
-      <div class="q"><b>91 ต้น</b><span>เสาเข็มสกรู Kemrex D76</span><small>ยาว 3.0 ม. 44 ต้น ที่ปลายล่างของแนวกระสอบ · ยาว 2.0 ม. 47 ต้น (back slope 44 ต้น + บริเวณท่อลอด 3 ต้น) ระยะ 1.00 ม.</small></div>
-      <div class="q"><b>949 ใบ</b><span>กระสอบมีปีก</span><small>เต็มใบ 912 + ใบตัดสั้น/ครึ่งใบ 37 · แนวลาด 3.00 ม. เรียงเป็นชั้นแนวนอนซ้อนกัน</small></div>
-      <div class="q"><b>122 ใบ</b><span>กระสอบป่านใส่ทราย</span><small>เติมช่วงลาดใต้บล็อกกระสอบรอบปากท่อ เป็นรูปสามเหลี่ยม วางเรียงจากฐานขึ้นมาชนหน้า capbeam</small></div>
-      <div class="q"><b>79 ต้น</b><span>Shear pin</span><small>ø141 มม. หนา 9 มม. ยาว 9.0 ม. ห่าง 0.50 ม. สลับตั้ง/เอียง พร้อม compaction grouting</small></div>
-      <div class="q"><b>40.00 ม.</b><span>Capbeam</span><small>กว้าง 0.60 สูง 0.45 ม. (ค่าจากการวัดแบบ)</small></div>
-      <div class="q"><b>6 เส้น</b><span>Horizontal drain</span><small>PVC 2 นิ้ว ยาว 3.00 ม. ห่างกัน 8 ม.</small></div>
-      <div class="q"><b>ø0.60 ม.</b><span>ท่อลอด ค.ส.ล.</span><small>ลาด 1.5% บ่อพัก 1.10 × 1.10 ม. พร้อมตะแกรงเหล็ก</small></div>
-      <div class="q"><b>166 + 162</b><span>กล้าไม้ + กอดอกไม้</span><small>ปลูกที่รอยต่อระหว่างกระสอบ ทุก 3 ชั้น ห่างประมาณ 0.7 ม.</small></div>
+  <section id="carbon" aria-labelledby="h-carbon">
+    <h2 id="h-carbon">คาร์บอนจากต้นไม้ที่ปลูก</h2>
+    <p>พืชดูดคาร์บอนไดออกไซด์จากบรรยากาศมาใช้ในการเติบโต และเก็บคาร์บอนไว้ในลำต้น กิ่ง ใบ และราก คาร์บอนบางส่วนยังเข้าสู่ดินผ่านเศษพืชและรากที่ย่อยสลาย งานชีววิศวกรรมปฐพีที่ สร.เขาเขียวจึงมีโอกาสช่วยกักเก็บคาร์บอน พร้อมกับป้องกันการพังทลายของลาดดิน</p>
+    <div class="callout warn"><b>การปลูกพืชไม่ได้ทำให้ได้รับคาร์บอนเครดิตโดยอัตโนมัติ</b> โครงการต้องเข้าเกณฑ์ของมาตรฐานที่ใช้ (เช่น มาตรฐาน T-VER ของประเทศไทย) มีการคำนวณเทียบกับกรณีฐาน ติดตามผล และผ่านการทวนสอบก่อนออกเครดิต ส่วนการปล่อยคาร์บอนจากการก่อสร้าง (วัสดุ การขนส่ง เครื่องจักร) ไม่รวมอยู่ในวิธีคิดนี้ ต้องประเมินแยกจากปริมาณวัสดุจริง</div>
+
+    <h3>วิธีคิดแบบง่าย (ใช้เพื่อเรียนรู้)</h3>
+    <ol class="steps">
+      <li><b>นับต้นที่รอดชีวิต</b> = จำนวนต้นที่ปลูก × อัตราการรอดชีวิต</li>
+      <li><b>มวลชีวภาพแห้งต่อต้น</b> (ลำต้น กิ่ง ใบ และราก) เมื่อโตเต็มที่ หน่วยกิโลกรัม ของจริงต้องวัดความสูงและเส้นรอบวงแล้วใช้สมการของพืชชนิดนั้น</li>
+      <li><b>เปลี่ยนมวลชีวภาพเป็นคาร์บอน</b> × สัดส่วนคาร์บอน (ค่ามาตรฐานทั่วไป 0.47 ตามแนวทางของ IPCC)</li>
+      <li><b>เปลี่ยนคาร์บอนเป็นคาร์บอนไดออกไซด์เทียบเท่า</b> × 44/12 (= 3.67) เพราะ C 12 หน่วย ต่อ CO<sub>2</sub> 44 หน่วย</li>
+      <li><b>หารด้วย 1,000 เป็นตัน CO<sub>2</sub>e</b> เครดิต 1 หน่วยเท่ากับ 1 ตัน CO<sub>2</sub>e ที่ผ่านการรับรอง</li>
+    </ol>
+    <p>สูตรรวม: <code>ตัน CO₂e = จำนวนต้น × อัตรารอด × มวลแห้งต่อต้น (กก.) × 0.47 × 44/12 ÷ 1,000</code></p>
+
+    <h3>ลองคำนวณ</h3>
+    <div class="calc" id="calc">
+      <div class="grid">
+        <label>จำนวนกล้าไม้ที่ปลูก (ต้น)<small>จากโมเดลนี้ ไม่นับกอดอกไม้ 162 กอ</small><input id="c-seed" type="number" inputmode="numeric" min="0" step="1" value="166"></label>
+        <label>อัตราการรอดชีวิต (%)<input id="c-surv" type="number" inputmode="decimal" min="0" max="100" step="1" value="80"></label>
+        <label>มวลแห้งเฉลี่ยต่อกล้าไม้เมื่อโตเต็มที่ (กก./ต้น)<small>ค่าสมมติ ขึ้นกับชนิดพืช</small><input id="c-mseed" type="number" inputmode="decimal" min="0" step="0.1" value="3"></label>
+        <label>สัดส่วนคาร์บอนในมวลแห้ง<small>ค่าทั่วไป 0.47</small><input id="c-cf" type="number" inputmode="decimal" min="0" max="1" step="0.01" value="0.47"></label>
+        <label>ระยะเวลาโตเต็มที่ (ปี)<input id="c-yrs" type="number" inputmode="numeric" min="1" step="1" value="10"></label>
+      </div>
+      <div class="result" aria-live="polite">
+        <div><b id="r-alive">–</b><span>กล้าไม้ที่รอดชีวิต (ต้น)</span></div>
+        <div><b id="r-seed">–</b><span>คาร์บอนไดออกไซด์เทียบเท่า (กก. CO₂e)</span></div>
+        <div><b id="r-tot">–</b><span>รวม (ตัน CO₂e)</span></div>
+        <div><b id="r-yr">–</b><span>เฉลี่ยต่อปี (ตัน CO₂e/ปี)</span></div>
+      </div>
+      <button id="c-reset" type="button">คืนค่าเริ่มต้น</button>
+      <p class="hint">ค่ามวลแห้งต่อต้นและอัตรารอดในช่องคำนวณเป็นตัวเลขสมมติเพื่อสาธิตวิธีคิด ไม่ใช่ค่าที่วัดจากพืชที่ สร.เขาเขียว ผลลัพธ์จึงไม่ใช่ปริมาณคาร์บอนเครดิตที่ขอรับรองได้ ต้องคำนวณใหม่ด้วยค่าจริง และหักกรณีฐาน (คาร์บอนที่พื้นที่เดิมเก็บอยู่แล้ว) การรั่วไหล และผลของการก่อสร้างออกก่อน</p>
     </div>
-    <p class="hint">ปริมาณนับจากโมเดล ใช้ประกอบความเข้าใจรูปแบบงานและการประมาณราคาเบื้องต้นเท่านั้น</p>
+    <p>จากค่าตั้งต้น กล้าไม้ 166 ต้นบนลาดขนาดนี้กักเก็บคาร์บอนได้ประมาณ 0.7 ตัน CO₂e หรือน้อยกว่า จึงควรพิจารณาคุณค่าของงานนี้ที่ความมั่นคงของลาดเป็นหลัก ส่วนคาร์บอนเป็นผลพลอยได้ที่ต้องพิสูจน์ด้วยการตรวจวัดจริง หากต้องการนำไปขอรับรอง</p>
   </section>
 
   <section id="spec" aria-labelledby="h-spec">
@@ -1439,7 +1471,7 @@ footer{font-size:13px;color:var(--muted);border-top:1px solid var(--line);paddin
   var VIEWS = {
     overview: {
       title: 'ภาพรวมแนวก่อสร้างยาวประมาณ 50 ม.', bounds: ALLB, labelStep: 5, dir: [-0.5, 0.32, 0.8], badge: 'ลาดทั้งหมด', hide: [],
-      dl: [['กระสอบมีปีก', '949 ใบ เรียงเป็นชั้นแนวนอนซ้อนกัน แนวลาด 3.00 ม.'], ['กระสอบป่าน', '122 ใบ ใต้บล็อกกระสอบรอบปากท่อ'], ['เสาเข็มสกรู', '91 ต้น (3.0 ม. 44 ต้น · 2.0 ม. 47 ต้น)'], ['Shear pin', '79 ต้น ใต้ capbeam ยาว 40 ม.']],
+      dl: [['กระสอบมีปีก', 'เรียงเป็นชั้นแนวนอนซ้อนกัน แนวลาด 3.00 ม.'], ['กระสอบป่าน', 'ใส่ทรายใต้บล็อกกระสอบรอบปากท่อ'], ['เสาเข็มสกรู', '91 ต้น (3.0 ม. 44 ต้น · 2.0 ม. 47 ต้น)'], ['Shear pin', '79 ต้น ใต้ capbeam ยาว 40 ม.']],
       note: 'กำแพงกระสอบมีปีกอยู่ชิดแนวลาดด้านข้างถนน capbeam กับ shear pin อยู่ใต้ขอบถนน ฝั่ง back slope มีรางระบายน้ำหนึ่งราง horizontal drain และเสาเข็มสกรู 2.0 ม. ท่อลอดอยู่ที่ปลายแนว โดยมีกระสอบเรียงเป็นบล็อกรอบปากท่อ'
     },
     cut: {
@@ -2064,6 +2096,30 @@ footer{font-size:13px;color:var(--muted);border-top:1px solid var(--line);paddin
       layRenderer.render(layScene, layCam);
     }
   })();
+})();
+</script>
+<script>
+(function(){
+  var ids = ['seed','surv','mseed','cf','yrs'], el = {}, DEF = {};
+  ids.forEach(function(k){ el[k] = document.getElementById('c-' + k); if (el[k]) DEF[k] = el[k].value; });
+  function num(k){ var v = parseFloat(el[k].value); return isFinite(v) && v >= 0 ? v : 0; }
+  function fmt(v, d){ return v.toLocaleString('th-TH', {minimumFractionDigits: d, maximumFractionDigits: d}); }
+  function calc(){
+    if (!el.seed) return;
+    var surv = Math.min(num('surv'), 100) / 100, cf = Math.min(num('cf'), 1), yrs = Math.max(num('yrs'), 1);
+    var k = cf * 44 / 12;
+    var alive = num('seed') * surv;
+    var seed = alive * num('mseed') * k;
+    var tot = seed / 1000;
+    document.getElementById('r-alive').textContent = fmt(alive, 0);
+    document.getElementById('r-seed').textContent = fmt(seed, 1);
+    document.getElementById('r-tot').textContent = fmt(tot, 2);
+    document.getElementById('r-yr').textContent = fmt(tot / yrs, 3);
+  }
+  ids.forEach(function(k){ if (el[k]) el[k].addEventListener('input', calc); });
+  var rb = document.getElementById('c-reset');
+  if (rb) rb.addEventListener('click', function(){ ids.forEach(function(k){ el[k].value = DEF[k]; }); calc(); });
+  calc();
 })();
 </script>
 </body>
