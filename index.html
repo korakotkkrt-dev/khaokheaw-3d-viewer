@@ -1756,6 +1756,36 @@ footer{font-size:13px;color:var(--muted);border-top:1px solid var(--line);paddin
   var pileMeshes = [], pileJobs = {}, jobList = [];
   var TL = [[0, 3, 0, 0], [3, 8, 0, 0], [8, 21, 0, 0], [21, 42, 0, 0], [42, 56, 0, 0], [56, 61, 0, 0], [61, 65, 0, 1], [65, 69, 1, 2], [69, 73, 2, 3], [73, 81, 3, 7], [81, 93, 7, NCOURSE], [93, 96, NCOURSE, NCOURSE], [96, 106, NCOURSE, 2 * NCOURSE], [106, 121, 2 * NCOURSE, 3 * NCOURSE]];
   var TT = 121;
+  // step 2 (clearing): the green slope turns into bare soil as a soft-edged wipe sweeps along the area (mask in plan-frame coordinates)
+  var MASK = {x0: -1.2, y0: -2.0, w: 5.4, h: 48.0, pxm: 20};
+  var maskCv = document.createElement('canvas'); maskCv.width = Math.round(MASK.w * MASK.pxm); maskCv.height = Math.round(MASK.h * MASK.pxm);
+  var maskCtx = maskCv.getContext('2d');
+  var maskTex = new THREE.CanvasTexture(maskCv); maskTex.minFilter = THREE.LinearFilter; maskTex.magFilter = THREE.LinearFilter; maskTex.generateMipmaps = false;
+  var maskLast = -9;
+  function cvPt(p){ return [(p[0] - MASK.x0) * MASK.pxm, (1 - (p[1] - MASK.y0) / MASK.h) * maskCv.height]; }
+  function drawMask(ys){
+    ys = Math.round(ys * 10) / 10;
+    if (ys === maskLast) return; maskLast = ys;
+    maskCtx.fillStyle = '#000'; maskCtx.fillRect(0, 0, maskCv.width, maskCv.height);
+    for (var y = -0.65; y < 43.15; y += 0.25){
+      var a = Math.max(0, Math.min(1, (ys - y) / 1.6)); if (a <= 0) continue;
+      var y2 = Math.min(y + 0.28, 43.15);
+      var q = [bendF(-0.05, y), bendF(3.0, y), bendF(3.0, y2), bendF(-0.05, y2)].map(cvPt);
+      maskCtx.fillStyle = 'rgba(255,255,255,' + a.toFixed(3) + ')';
+      maskCtx.beginPath(); maskCtx.moveTo(q[0][0], q[0][1]); maskCtx.lineTo(q[1][0], q[1][1]); maskCtx.lineTo(q[2][0], q[2][1]); maskCtx.lineTo(q[3][0], q[3][1]); maskCtx.closePath(); maskCtx.fill();
+    }
+    maskTex.needsUpdate = true;
+  }
+  function clearShader(mat){
+    mat.onBeforeCompile = function(sh){
+      sh.uniforms.uMask = {value: maskTex}; sh.uniforms.uBox = {value: new THREE.Vector4(MASK.x0, MASK.y0, MASK.w, MASK.h)};
+      sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\nvarying vec3 vWp;')
+        .replace('#include <begin_vertex>', '#include <begin_vertex>\nvec4 wp4 = vec4(transformed, 1.0);\n#ifdef USE_INSTANCING\nwp4 = instanceMatrix * wp4;\n#endif\nwp4 = modelMatrix * wp4; vWp = wp4.xyz;');
+      sh.fragmentShader = sh.fragmentShader.replace('#include <common>', '#include <common>\nvarying vec3 vWp; uniform sampler2D uMask; uniform vec4 uBox;')
+        .replace('#include <color_fragment>', '#include <color_fragment>\n vec2 muv = vec2((vWp.x - uBox.x) / uBox.z, (-vWp.z - uBox.y) / uBox.w);\n float mk = texture2D(uMask, muv).r; if (muv.x < 0.0 || muv.x > 1.0 || muv.y < 0.0 || muv.y > 1.0) mk = 0.0;\n float n = fract(sin(dot(floor(vWp.xz * 9.0), vec2(12.9898, 78.233))) * 43758.5453);\n vec3 soil = mix(vec3(0.58, 0.43, 0.29), vec3(0.50, 0.36, 0.24), n * 0.6);\n float edge = smoothstep(0.02, 0.45, mk) * (1.0 - smoothstep(0.55, 1.0, mk));\n diffuseColor.rgb = mix(diffuseColor.rgb, soil, smoothstep(0.0, 0.7, mk)); diffuseColor.rgb *= (1.0 - 0.22 * edge);');
+    };
+    mat.needsUpdate = true;
+  }
   try {
     layRenderer = newRenderer(layHost);
     layScene = new THREE.Scene(); lights(layScene);
@@ -1803,7 +1833,9 @@ footer{font-size:13px;color:var(--muted);border-top:1px solid var(--line);paddin
         return;
       }
       if (!ANIM[grp]){
-        layGroup(grp).add(makeInst(gc, gc.mats, gc.g.n, LAYCP));
+        var im0 = makeInst(gc, gc.mats, gc.g.n, LAYCP);
+        if (grp === 'ground_raw1' && gc.g.c[0] === 112) clearShader(im0.material);   // the green (vegetated) top face only
+        layGroup(grp).add(im0);
         return;
       }
       var items2 = [];
@@ -1902,24 +1934,7 @@ footer{font-size:13px;color:var(--muted);border-top:1px solid var(--line);paddin
     cyl(0.13, 0.32, M_GREY, drive, 0, 0, 0.2, 'z'); cyl(0.1, 0.22, M_RED, drive, 0, 0, 0.47, 'z'); box(0.12, 0.2, 0.2, M_DARK, drive, 0, 0, 0.7);
     var bar = box(1.7, 0.07, 0.07, M_GREY, drive, 0.85, 0, 0.12);
 
-    // cleared area on the original slope: zone 1 footprint (toe piles to the capbeam), darker brown, swept along the road
-    var CLEARCP = new THREE.Plane(new THREE.Vector3(0, 0, 1), WY0);       // keeps y <= constant (three z = -y)
-    var TANA2 = Math.tan(34.4 * Math.PI / 180);
-    var clearGeo = new THREE.BufferGeometry();
-    (function(){
-      var X0 = -0.05, X1 = 3.0, Ya = -0.65, Yb = 43.15, off = 0.012, v = [], ix = [], n = 0;
-      for (var yy = Ya; yy <= Yb + 1e-6; yy += 1.0){
-        var yc = Math.min(yy, Yb), a0 = bendF(X0, yc), a1 = bendF(X1, yc);
-        v.push(a0[0], a0[1], X0 * TANA2 + off, a1[0], a1[1], X1 * TANA2 + off);
-        if (n > 0) ix.push(2 * (n - 1), 2 * (n - 1) + 1, 2 * n + 1, 2 * (n - 1), 2 * n + 1, 2 * n);
-        n++;
-        if (yc >= Yb) break;
-      }
-      clearGeo.setAttribute('position', new THREE.Float32BufferAttribute(v, 3));
-      clearGeo.setIndex(ix); clearGeo.computeVertexNormals();
-    })();
-    var clearPatch = new THREE.Mesh(clearGeo, new THREE.MeshLambertMaterial({color: 0x6f4a2c, side: THREE.DoubleSide, clippingPlanes: [LAYCP[0], CLEARCP], polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2}));
-    toolRoot.add(clearPatch); clearPatch.visible = false;
+
 
     function lerp(a, b, f){ return a + (b - a) * f; }
     function clamp01(v){ return Math.max(0, Math.min(1, v)); }
@@ -2039,7 +2054,7 @@ footer{font-size:13px;color:var(--muted);border-top:1px solid var(--line);paddin
 
     var STEPS = [
       ['1  ลาดดินเดิมก่อนเริ่มงาน', 'ลาดดินด้านข้างถนนยังเป็นดินเปล่า ยังไม่มีกระสอบและเสาเข็ม ท่อลอด บ่อพัก capbeam และ shear pin ก่อสร้างเรียบร้อยแล้ว ท่อลอดวางอยู่บนฐานดินถมบดอัด ชั้นทรายและคอนกรีตหยาบ ส่วนที่เปิดโล่งรอบท่อจะปิดด้วยกระสอบ ผิวลาดเดิมประมาณ 34° แอนิเมชันนี้แสดงเฉพาะขั้นตอนการเรียงกระสอบ'],
-      ['2  เคลียร์พื้นที่เรียงกระสอบ', 'ถางพืชและเคลียร์ผิวดินบริเวณที่จะเรียงกระสอบ กว้างตามแนวลาดจากปลายเสาเข็มถึงขอบ capbeam (พื้นที่สีน้ำตาลเข้มในภาพ) ปรับผิวให้เรียบก่อนติดตั้งเสาเข็ม'],
+      ['2  เคลียร์พื้นที่เรียงกระสอบ', 'ถางพืชและเคลียร์ผิวดินบริเวณที่จะเรียงกระสอบ กว้างตามแนวลาดจากปลายเสาเข็มถึงขอบ capbeam (ผิวดินที่เคลียร์แล้วเปลี่ยนเป็นสีดินเปล่าในภาพ) ปรับผิวให้เรียบก่อนติดตั้งเสาเข็ม'],
       ['3  ติดตั้งเสาเข็มสกรูฝั่ง side slope ด้วยรถกดเสาเข็ม', 'รถกดเสาเข็มจอดบนถนนเท่านั้น เหยียดแขนเครนลงมากดเสาเข็มสกรูยาว 3.0 ม. ที่ปลายล่างของลาด แขนมีความยาวคงที่ ไม่ยืดหด ระยะเอื้อมมาจากการหมุนข้อต่อแบบรถเครน ระยะไม่เกิน 3.5 ม. กดทีละต้นห่างกัน 1.00 ม. แล้วเลื่อนรถไปตามแนวถนน (ขนาดรถในแอนิเมชันเป็นรูปทรงสมมติ)'],
       ['4  ติดตั้งเสาเข็มสกรูฝั่ง back slope ด้วยรถกดเสาเข็ม', 'ย้ายแขนเครนไปทำฝั่ง back slope รถยังอยู่บนถนน หมุนข้อต่อให้แขนข้ามรางระบายน้ำลงไปกดเสาเข็มสกรูยาว 2.0 ม. ห่างกัน 1.00 ม. ระยะเอื้อมไม่เกิน 3.5 ม. แล้วเลื่อนรถไปตามแนวถนน'],
       ['5  โซนท่อลอด: ติดตั้งเสาเข็มสกรูด้วยเครื่อง hand drive', 'เสาเข็มสกรูยาว 2.0 ม. ที่แนวท่อลอด 3 ต้นอยู่ที่เชิงลาด รถเอื้อมไม่ถึง จึงใช้เครื่องมือ hand drive ที่ควบคุมด้วยคน คนหนึ่งจับหัวสว่านให้อยู่บนหัวเสาเข็ม อีกคนจับท่อนเหล็กไว้ต้านแรงบิดไม่ให้เครื่องหมุนตาม เสาเข็มสกรูจะหมุนตัวเองลงไปในดิน ไม่มีคนหรือเครื่องมือหมุนนอกจากตัวเสาเข็ม เมื่อเสาเข็มครบทุกโซนแล้วจึงเริ่มขุดและเรียงกระสอบ'],
@@ -2071,10 +2086,9 @@ footer{font-size:13px;color:var(--muted);border-top:1px solid var(--line);paddin
       vis(layG.ground_raw1, !cut1); vis(layG.ground_z1, cut1);
       vis(layG.ground_raw2, false); vis(layG.ground_z2, true);      // the culvert (pipe, manhole, trench) is already built
       vis(layG.culvert, true);
-      // cleared area (darker brown) sweeps along the road during step 2 and disappears when the slope is re-cut
+      // clearing (step 2): the green slope turns into bare soil as a soft wipe sweeps along the area; stays bare until the slope is re-cut
       var cf = clamp01((t - TL[1][0]) / (TL[1][1] - TL[1][0]));
-      clearPatch.visible = t >= TL[1][0] && !cut1;
-      CLEARCP.constant = lerp(WY0, 43.2, cf);
+      drawMask(t < TL[1][0] ? 35 : lerp(35, 44.8, cf));
     }
     function applyT(){
       applyStage(tNow);
